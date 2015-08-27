@@ -1,0 +1,60 @@
+{
+    "name": "Cronario?Cronario",
+    "description": "Do Jobs like a Boss",
+    "keywords": [
+      "Cronario", "Cron", "Threads",
+      "Daemon","Manager", "Queue", "Job", "Worker", "Producer",
+      "Asynchronous", "Synchronous",
+      "Async", "Sync"
+    ],
+
+    "dist": {
+      "url": "git@stash.interkassa.com:ik/cronario.git",
+      "type": "git"
+    },
+
+    "homepage": "https://stash.interkassa.com/projects/IK/repos/cronario/browse",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Gryaznov Vladislav",
+            "email": "v.gryaznov@interkassa.com",
+            "homepage": "https://interkassa.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php" : ">=5.5.0",
+        "ik/lib" : "0.1",
+        "predis/predis": "1.0.1",
+        "mtdowling/cron-expression": "^1.0",
+        "hipchat/hipchat-php": ">=1.0.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cronario\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cronario\\Test\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.0.1"
+        }
+    },
+  "repositories": [
+    {
+      "type": "vcs",
+      "url": "ssh://git@stash.interkassa.com/ik/lib.git"
+    }
+  ]
+}
