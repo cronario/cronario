@@ -86,18 +86,18 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
 
-[ico-version]: https://img.shields.io/packagist/v/league/:package_name.svg?style=flat-square
+[ico-version]: https://img.shields.io/packagist/v/cronario/cronario.svg?style=flat-square
 [ico-license]: https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square
-[ico-travis]: https://img.shields.io/travis/thephpleague/:package_name/master.svg?style=flat-square
-[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/thephpleague/:package_name.svg?style=flat-square
-[ico-code-quality]: https://img.shields.io/scrutinizer/g/thephpleague/:package_name.svg?style=flat-square
-[ico-downloads]: https://img.shields.io/packagist/dt/league/:package_name.svg?style=flat-square
+[ico-travis]: https://img.shields.io/travis/cronario/cronario/develop.svg?style=flat-square
+[ico-scrutinizer]: https://img.shields.io/scrutinizer/coverage/g/cronario/cronario.svg?style=flat-square
+[ico-code-quality]: https://img.shields.io/scrutinizer/g/cronario/cronario.svg?style=flat-square
+[ico-downloads]: https://img.shields.io/packagist/dt/cronario/cronario.svg?style=flat-square
 
-[link-packagist]: https://packagist.org/packages/league/:package_name
-[link-travis]: https://travis-ci.org/thephpleague/:package_name
-[link-scrutinizer]: https://scrutinizer-ci.com/g/thephpleague/:package_name/code-structure
-[link-code-quality]: https://scrutinizer-ci.com/g/thephpleague/:package_name
-[link-downloads]: https://packagist.org/packages/league/:package_name
+[link-packagist]: https://packagist.org/packages/cronario/cronario
+[link-travis]: https://travis-ci.org/cronario/cronario
+[link-scrutinizer]: https://scrutinizer-ci.com/g/cronario/cronario/code-structure
+[link-code-quality]: https://scrutinizer-ci.com/g/cronario/cronario
+[link-downloads]: https://packagist.org/packages/cronario/cronario
 [link-author]: https://github.com/vlad-groznov
 [link-contributors]: ../../contributors
 
