@@ -1,4 +1,5 @@
-# :package_name
+# Cronario 
+
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Software License][ico-license]](LICENSE.md)
@@ -7,24 +8,58 @@
 [![Quality Score][ico-code-quality]][link-code-quality]
 [![Total Downloads][ico-downloads]][link-downloads]
 
-**Note:** Replace ```:author_name``` ```:author_username``` ```:author_website``` ```:author_email``` ```:package_name``` ```:package_description``` with their correct values in [README.md](README.md), [CHANGELOG.md](CHANGELOG.md), [CONTRIBUTING.md](CONTRIBUTING.md), [LICENSE.md](LICENSE.md) and [composer.json](composer.json) files, then delete this line.
-
-This is where your description should go. Try and limit it to a paragraph or two, and maybe throw in a mention of what
-PSRs you support to avoid any confusion with users and contributors.
+**Cronario** -  do jobs like a boss
+- Management tasks (asinhronnoo and synchronous)
+- Tasks with exotic schedule
 
 ## Install
 
 Via Composer
 
 ``` bash
-$ composer require league/:package_name
+$ composer require cronario/cronario
 ```
 
 ## Usage
 
-``` php
-$skeleton = new League\Skeleton();
-echo $skeleton->echoPhrase('Hello, League!');
+
+
+bootstrap.php
+```php
+// main file where presents all producers
+
+$producer = new Producer(); // by defaults appId = 'default'
+
+Facade::addProducer($producer);
+```
+
+
+simpleDaemon.php
+```php
+// this file you should execute from cli 
+// $ php /.../simpleDaemon.php
+
+include('bootstrap.php');
+
+$producer = Facade::getProducer();
+$producer->start();
+```
+
+
+applicationPage-1.php
+```php
+include('bootstrap.php');
+
+$job = new Job([
+    /* ... */
+]);
+
+$result = $job();
+
+/*
+    $result = [ ... ];
+*/
+
 ```
 
 ## Change log
@@ -41,13 +76,10 @@ $ composer test
 
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
-## Security
-
-If you discover any security related issues, please email :author_email instead of using the issue tracker.
 
 ## Credits
 
-- [:author_name][link-author]
+- [Vlad Groznov][link-author]
 - [All Contributors][link-contributors]
 
 ## License
@@ -66,5 +98,8 @@ The MIT License (MIT). Please see [License File](LICENSE.md) for more informatio
 [link-scrutinizer]: https://scrutinizer-ci.com/g/thephpleague/:package_name/code-structure
 [link-code-quality]: https://scrutinizer-ci.com/g/thephpleague/:package_name
 [link-downloads]: https://packagist.org/packages/league/:package_name
-[link-author]: https://github.com/:author_username
+[link-author]: https://github.com/vlad-groznov
 [link-contributors]: ../../contributors
+
+
+
