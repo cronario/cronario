@@ -1,5 +1,5 @@
 {
-    "name": "Cronario?Cronario",
+    "name": "cronario/cronario",
     "description": "Do Jobs like a Boss",
     "keywords": [
       "Cronario", "Cron", "Threads",
@@ -8,12 +8,7 @@
       "Async", "Sync"
     ],
 
-    "dist": {
-      "url": "git@stash.interkassa.com:ik/cronario.git",
-      "type": "git"
-    },
-
-    "homepage": "https://stash.interkassa.com/projects/IK/repos/cronario/browse",
+    "homepage": "http://cronar.io",
     "license": "MIT",
     "authors": [
         {
@@ -25,7 +20,7 @@
     ],
     "require": {
         "php" : ">=5.5.0",
-        "ik/lib" : "0.1",
+        "cronario/result" : "0.1.*",
         "predis/predis": "1.0.1",
         "mtdowling/cron-expression": "^1.0",
         "hipchat/hipchat-php": ">=1.0.0"
@@ -50,11 +45,5 @@
         "branch-alias": {
             "dev-master": "0.0.1"
         }
-    },
-  "repositories": [
-    {
-      "type": "vcs",
-      "url": "ssh://git@stash.interkassa.com/ik/lib.git"
     }
-  ]
 }

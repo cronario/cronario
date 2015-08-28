@@ -2,7 +2,7 @@
 
 namespace Cronario\Exception;
 
-use \Ik\Lib\Exception\ResultException as IkResultException;
+use \Result\ResultException as IkResultException;
 
 class ResultException extends IkResultException
 {

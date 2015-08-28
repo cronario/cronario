@@ -1,0 +1,27 @@
+sudo: true
+
+language: php
+php:
+  - 5.5
+  - 5.6
+
+install:
+  - export PATH="$HOME/.composer/vendor/bin:$PATH"
+  - composer install
+
+services:
+    - mongodb
+    - redis-server
+
+after_success:
+  - wget https://scrutinizer-ci.com/ocular.phar
+  - php ocular.phar code-coverage:upload --format=php-clover build/logs/clover.xml
+
+before_script:
+  - sudo pecl install pthreads
+  - echo "extension=pthreads.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
+
+cache:
+  directories:
+    - vendor
+    - $HOME/.composer/cache

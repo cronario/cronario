@@ -4,27 +4,32 @@
   tasks:
   - name: System upgrade
     apt: update_cache=yes upgrade=yes
-  - name: Install packages
+  - name: Install basic packages
     apt: name={{ item }} state=latest
     with_items:
       - git
+      - python-pycurl
       - mcrypt
       - nginx
       - sqlite3
       - mysql-server
       - redis-server
-      - python-pycurl
       - libpcre3-dev
   - name: Run mysql-server
     service: name=mysql state=running
-  - name: Add dotdeb repository
-    apt_repository: repo='deb http://packages.dotdeb.org wheezy-php56-zts all' state=present
-  - name: Add dotdeb key
-    apt_key: url='https://www.dotdeb.org/dotdeb.gpg' state=present
-  - name: Add mongodb repository
-    apt_repository: repo='deb http://repo.mongodb.org/apt/debian wheezy/mongodb-org/3.0 main' state=present
-  - name: Add mongodb key
-    apt_key: url='https://docs.mongodb.org/10gen-gpg-key.asc' state=present validate_certs=no
+
+  - name: Add custom repositories
+    apt_repository: repo="{{ item }}" state=present
+    with_items:
+      - 'deb http://packages.dotdeb.org wheezy-php56-zts all'
+      - 'deb http://repo.mongodb.org/apt/debian wheezy/mongodb-org/3.0 main'
+
+  - name: Add repository keys
+    apt_key: url={{ item }} state=present
+    with_items:
+      - 'https://www.dotdeb.org/dotdeb.gpg'
+      - 'https://docs.mongodb.org/10gen-gpg-key.asc'
+
   - name: Install from custom repository
     apt: name={{ item }} update_cache=yes state=latest
     with_items:
@@ -35,6 +40,7 @@
     - php5-mysql
     - php5-sqlite
     - php5-dev
+
   - name: Install PECL threads.
     command: "pecl install pthreads"
     register: pecl_result
@@ -48,7 +54,9 @@
     notify:
     - restart php5-fpm
   - name: Install composer
-    get_url: url=https://getcomposer.org/composer.phar dest=/usr/bin/composer mode=0444
+    get_url: url=https://getcomposer.org/composer.phar dest=/usr/bin/composer mode=555
+
+
   handlers:
     - name: restart php5-fpm
       service: name=php5-fpm state=restarted

@@ -368,7 +368,7 @@ abstract class AbstractJob implements \Serializable
 
     /**
      * @return ResultException|null
-     * @throws \Ik\Lib\Exception\RuntimeException
+     * @throws \Result\RuntimeException
      */
     public function getResult()
     {
@@ -380,7 +380,7 @@ abstract class AbstractJob implements \Serializable
      * @param null $data
      *
      * @return ResultException|mixed
-     * @throws \Ik\Lib\Exception\RuntimeException
+     * @throws \Result\RuntimeException
      */
     public function setResult($result, $data = null)
     {
