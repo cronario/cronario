@@ -19,7 +19,6 @@ after_success:
 
 before_script:
   - pecl install pthreads
-  - echo "extension=pthreads.so" >> ~/.phpenv/versions/$(phpenv version-name)/etc/php.ini
 
 cache:
   directories:
