@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Cronario;
+namespace Cronario\Test;
 
 use Cronario\Producer;
 
