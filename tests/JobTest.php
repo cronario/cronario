@@ -8,13 +8,6 @@ use \Cronario\Example\Job;
 class JobTest extends \PHPUnit_Framework_TestCase
 {
 
-//    protected function setUp()
-//    {
-//        \Ik\Lib\Exception\ResultException::setClassIndexMap([
-//            'Cronario\\Exception\\ResultException' => 1,
-//        ]);
-//    }
-
     public function testJobCreate()
     {
         $job = new Job();
@@ -55,24 +48,12 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function testJobDataCallbackCreate()
     {
         $job = new Job([
-            Job::P_PARAMS   => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
             Job::P_COMMENT  => 'comment-xxx',
             Job::P_AUTHOR   => 'author-xxx',
-            Job::P_IS_SYNC  => true,
-            Job::P_DEBUG    => true,
             Job::P_CALLBACK => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
-                        Job::P_PARAMS  => [
-                            Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS,
-                            Job::P_PARAM_SLEEP           => 3,
-                        ],
                         Job::P_COMMENT => 'comment-xxx / level 2',
-                        Job::P_IS_SYNC => true,
-                        Job::P_DEBUG   => true,
                     ]),
                 ]
             ]
@@ -81,25 +62,22 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $callbacksAll = $job->getCallback();
         $this->assertArrayHasKey(Job::P_CALLBACK_T_SUCCESS, $callbacksAll);
 
+
         $callbacksSuccess = $job->getCallback(Job::P_CALLBACK_T_SUCCESS);
         $this->assertInternalType('array', $callbacksSuccess);
         $this->assertEquals(1, count($callbacksSuccess));
-        $this->assertInstanceOf('\\Cronario\\AbstractJob', $callbacksSuccess[0]);
-        $this->assertEquals('comment-xxx / level 2', $callbacksSuccess[0]->getComment());
 
+        /** @var Job $callbackSingleJob */
+        $callbackSingleJob = $callbacksSuccess[0];
+        $this->assertInstanceOf('\\Cronario\\AbstractJob', $callbackSingleJob);
+        $this->assertEquals('comment-xxx / level 2', $callbackSingleJob->getComment());
     }
 
     public function testSerializationJob()
     {
         $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
             Job::P_COMMENT => 'comment-xxx',
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => true,
-            Job::P_DEBUG   => true,
         ]);
 
         $packed = serialize($job);
@@ -113,14 +91,8 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $commentSource = 'comment-xxx';
 
         $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
             Job::P_COMMENT => $commentSource,
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => true,
-            Job::P_DEBUG   => true,
         ]);
 
         $clonedJob = clone $job;
@@ -133,14 +105,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function testGetQueueDelay()
     {
         $job = new Job([
-            Job::P_PARAMS   => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
-            Job::P_COMMENT  => 'comment-xxx',
-            Job::P_AUTHOR   => 'author-xxx',
             Job::P_IS_SYNC  => false,
-            Job::P_DEBUG    => true,
             Job::P_START_ON => time() + 10,
         ]);
 
@@ -154,15 +119,8 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function testGetDataFull()
     {
         $job = new Job([
-            Job::P_PARAMS   => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
-            Job::P_COMMENT  => 'comment-xxx',
-            Job::P_AUTHOR   => 'author-xxx',
-            Job::P_IS_SYNC  => false,
-            Job::P_DEBUG    => true,
-            Job::P_START_ON => time() + 10,
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
         ]);
 
         $dataFull = $job->getData(null);
@@ -175,16 +133,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     public function testUnsetData()
     {
-
         $commentSource = 'comment-xxx';
+
         $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
             Job::P_COMMENT => $commentSource,
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
         ]);
 
         $comment = $job->getData(Job::P_COMMENT);
@@ -196,27 +149,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
     }
 
 
-    public function testGetParamFull()
-    {
-        $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
-        ]);
-
-        $paramFull = $job->getParam(null);
-        $this->assertInternalType('array', $paramFull);
-
-        $paramFull = $job->getParam();
-        $this->assertInternalType('array', $paramFull);
-    }
-
-
-    public function testSetParam()
+    public function testGetSetParam()
     {
         $job = new Job([
             Job::P_PARAMS  => [
@@ -228,6 +161,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_IS_SYNC => false,
         ]);
 
+        $paramFull = $job->getParam(null);
+        $this->assertInternalType('array', $paramFull);
+
+        $paramFull = $job->getParam();
+        $this->assertInternalType('array', $paramFull);
 
         $this->assertEquals(9, $job->getParam(Job::P_PARAM_SLEEP));
 
@@ -241,13 +179,8 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $id = 'my-id-xxx';
 
         $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 9,
-            ],
             Job::P_COMMENT => 'comment-xxx',
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
         ]);
 
 
@@ -257,6 +190,9 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $job->setId($id);
         $this->assertEquals($id, $job->getId());
         $this->assertTrue($job->isStored());
+
+        $this->setExpectedException('\\Cronario\\Exception\\JobException');
+        $job->setId('new');
     }
 
 
@@ -265,13 +201,8 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $workerClass = '\\Custom\\Worker\\Class';
 
         $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 9,
-            ],
             Job::P_COMMENT => 'comment-xxx',
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
         ]);
 
         $job->setWorkerClass($workerClass);
@@ -285,16 +216,82 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
         $job = new Job([
             Job::P_APP_ID  => $appId,
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 9,
-            ],
             Job::P_COMMENT => 'comment-xxx',
             Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
         ]);
 
         $this->assertEquals($appId, $job->getAppId());
     }
 
+
+    public function testGetSetSchedule()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_IS_SYNC => false,
+        ]);
+
+        $job->setSchedule('* * * * *');
+        $this->assertEquals('* * * * *', $job->getSchedule());
+        $this->assertGreaterThanOrEqual(0, $job->getScheduleDelay());
+    }
+
+
+    public function testGetSetAttempt()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+
+        $this->assertEquals(0, $job->getAttempts());
+
+        $job->setAttemptsMax(99);
+        $this->assertEquals(99, $job->getAttemptsMax());
+
+
+        $job->setAttemptStrategy(Job::P_ATTEMPT_STRATEGY_T_EXP);
+        $this->assertEquals(Job::P_ATTEMPT_STRATEGY_T_EXP, $job->getAttemptStrategy());
+
+        $job->setAttemptDelay(33);
+        $this->assertEquals(33, $job->getAttemptDelay());
+
+        $this->assertTrue($job->hasAttempt());
+
+        $job->addAttempts();
+        $this->assertEquals(1, $job->getAttempts());
+
+        $job->addAttempts(10);
+        $this->assertEquals(11, $job->getAttempts());
+
+        $this->assertGreaterThan(33 * 11, $job->countAttemptQueueDelay());
+
+        $job->addAttempts(100);
+        $this->assertEquals(111, $job->getAttempts());
+        $this->assertFalse($job->hasAttempt());
+
+    }
+
+
+    public function testGetSetPriority()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        // defaults
+        $this->assertEquals(Job::P_PRIORITY_T_LOW, $job->getPriority());
+
+        // hight
+        $job->setPriority(Job::P_PRIORITY_T_HIGH);
+        $this->assertEquals(Job::P_PRIORITY_T_HIGH, $job->getPriority());
+
+        // low
+        $job->setPriority(Job::P_PRIORITY_T_LOW);
+        $this->assertEquals(Job::P_PRIORITY_T_LOW, $job->getPriority());
+
+    }
 }
