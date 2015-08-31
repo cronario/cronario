@@ -123,38 +123,31 @@ final class Facade
             /** @var $producer Producer */
             $redis = $producer->getRedis();
 
-            /** @var $redis \Predis\Client */
-            $keys = $redis->keys(Manager::REDIS_NS_STATS . '*');
+            $statsKeys = $redis->keys(Manager::REDIS_NS_STATS . '*');
 
-
-            foreach ($keys as $key) {
-                $parse = Manager::parseManagerStatKey($key);
-
+            foreach ($statsKeys as $statsKey) {
+                $parse = Manager::parseManagerStatKey($statsKey);
                 if ($appId != $parse['appId']) {
                     continue;
                 }
 
-                $data = $redis->hgetall($key);
-                $data['workerClass'] = $parse['workerClass'];
-                $data['appId'] = $parse['appId'];
-
-                $managersStats[$parse['appId']]['stat'][] = $data;
-
+                $statsItemData = $redis->hgetall($statsKey);
+                $statsItemData['workerClass'] = $parse['workerClass'];
+                $statsItemData['appId'] = $parse['appId'];
+                $managersStats[$parse['appId']]['stat'][] = $statsItemData;
             }
 
-            $keys = $redis->keys(Manager::REDIS_NS_LIVE . '*');
-            foreach ($keys as $key) {
-
-                $parse = Manager::parseManagerStatKey($key);
+            $liveKeys = $redis->keys(Manager::REDIS_NS_LIVE . '*');
+            foreach ($liveKeys as $liveKey) {
+                $parse = Manager::parseManagerStatKey($liveKey);
                 if ($appId != $parse['appId']) {
                     continue;
                 }
 
-                $data = $redis->hgetall($key);
-                $data['workerClass'] = $parse['workerClass'];
-                $data['appId'] = $parse['appId'];
-
-                $managersStats[$parse['appId']]['live'][] = $data;
+                $liveItemData = $redis->hgetall($liveKey);
+                $liveItemData['workerClass'] = $parse['workerClass'];
+                $liveItemData['appId'] = $parse['appId'];
+                $managersStats[$parse['appId']]['live'][] = $liveItemData;
             }
         }
 

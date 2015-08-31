@@ -62,17 +62,6 @@ abstract class AbstractWorker
         ];
 
 
-
-    /*
-     * [
-     *      'Xxx\Worker' => [
-     *          '...' => '...',
-     *      ],
-     *      'Yyy\Worker' => [
-     *          '...' => '...',
-     *      ]
-     * ]
-     */
     private static $loadedConfigSet = [];
     protected static $config = [];
     protected static $configFile; // __DIR__ . '/' . self::DEFAULT_CONFIG_FILENAME;
@@ -168,6 +157,10 @@ abstract class AbstractWorker
                 $job->getCallback(AbstractJob::P_CALLBACK_T_ERROR),
                 $job->getCallback($type)
             );
+        }
+        
+        if (!is_array($callbackJobs) || count($callbackJobs) === 0) {
+            return $this;
         }
 
         foreach ($callbackJobs as $index => $callbackJob) {

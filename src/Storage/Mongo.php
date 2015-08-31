@@ -7,31 +7,52 @@ use Cronario\AbstractJob;
 class Mongo implements StorageInterface
 {
 
-
     // region CONNECTION *****************************************************
+    /**
+     * @var \MongoCollection
+     */
+    protected $cacheCollection;
 
-    protected static $client;
-    protected static $db;
-    protected static $collection;
-
+    /**
+     * @return \MongoCollection
+     */
     protected function getCollection()
     {
-        if (null === static::$collection) {
+        if (null === $this->cacheCollection) {
             // connect
-            static::$client = new \MongoClient();
+            $client = new \MongoClient($this->config['server']);
 
             // select a database
-            static::$db = static::$client->ik2;
+            $db = $client->{$this->config['database']};
 
             // select a collection (analogous to a relational database's table)
-            static::$collection = static::$db->cronario_jobsss2;
+            $this->cacheCollection = $db->{$this->config['collection']};
         }
 
-        return static::$collection;
+        return $this->cacheCollection;
     }
 
     // endregion *****************************************************
 
+    const CONFIG_SERVER_DEFAULT = 'mongodb://localhost:27017';
+
+    /**
+     * @var array
+     */
+    protected $config
+        = [
+            'server'     => self::CONFIG_SERVER_DEFAULT,
+            'database'   => null,
+            'collection' => null,
+        ];
+
+    /**
+     * @param array $config
+     */
+    public function __construct(array $config)
+    {
+        $this->config = array_merge($this->config, $config);
+    }
 
     /**
      * @param AbstractJob $job
@@ -51,7 +72,7 @@ class Mongo implements StorageInterface
             $job->setId((string) $data['_id']);
         }
 
-        $result = static::getCollection()->update(
+        $result = $this->getCollection()->update(
             array('_id' => $data['_id']),
             array('$set' => $data),
             array('upsert' => true)
@@ -67,7 +88,7 @@ class Mongo implements StorageInterface
      */
     public function find($jobId)
     {
-        $data = static::getCollection()->findOne(array('_id' => new \MongoId($jobId)));
+        $data = $this->getCollection()->findOne(array('_id' => new \MongoId($jobId)));
 
         unset($data['_id']);
         $data[AbstractJob::P_ID] = $jobId;

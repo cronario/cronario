@@ -374,14 +374,8 @@ class Producer
 
     // endregion ***************************************************************
 
-    // region Manager ************************************************************
+    // region MANAGER ************************************************************
 
-    /*
-     * [
-     *    app_1:\ClassName\Worker:1 = new Manager( ... );
-     *    app_1:\ClassName\Worker:2 = new Manager( ... );
-     * ]
-     */
     protected $managerSet = [];
     protected $managerIgnoreSet = [];
 
@@ -664,7 +658,7 @@ class Producer
         $state = $this->getState();
 
         if (in_array($state, [self::STATE_T_START, self::STATE_T_STOP, self::STATE_T_KILL])
-            && !$this->processExists($this->getProcessId())
+            && !$this->processExists()
         ) {
             $this->getLogger()->warning("Daemon is ill cant find process {$this->getProcessId()}, try clean data");
 
@@ -747,7 +741,6 @@ class Producer
      */
     protected function processExists()
     {
-
         $processId = $this->getProcessId();
         if ($processId) {
             return shell_exec("ps aux | grep {$processId} | wc -l") > 2;

@@ -108,14 +108,14 @@ class Journal implements LoggerInterface
             $msg = print_r($msg, true);
         }
 
-        $points = str_repeat('. ', (int)$level);
+        $points = str_repeat('. ', (int) $level);
         $prefix = $this->getCurrentDate() . ' : ' . $points;
 
         $line = $prefix . $msg . PHP_EOL;
 
         $journalPath = $this->getJournalPath();
 
-        if ($this->journalLevel >= $level && $journalPath) {
+        if ($this->journalLevel >= $level && null !== $journalPath) {
             file_put_contents($journalPath, $line, FILE_APPEND);
         }
 
