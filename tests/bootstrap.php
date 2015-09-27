@@ -2,12 +2,14 @@
 
 date_default_timezone_set('Europe/Kiev');
 
-require __DIR__."/../vendor/autoload.php";
+require __DIR__ . "/../vendor/autoload.php";
 
 /**
-* Bootstrapping application
-*/
+ * Bootstrapping application
+ */
 
-shell_exec('php startDaemon.php > /dev/null &');
+if (getenv('TRAVIS') != true) {
+    shell_exec('php startDaemon.php > /dev/null &');
+}
 
 \Cronario\Facade::addProducer(new \Cronario\Producer());

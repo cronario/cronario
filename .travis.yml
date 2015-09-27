@@ -1,12 +1,20 @@
-sudo: true
+sudo: false
 
 language: php
+
 php:
   - 5.5
   - 5.6
+  - 7.0
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - php: 7.0
 
 install:
   - export PATH="$HOME/.composer/vendor/bin:$PATH"
+  - travis_retry composer self-update && composer --version
   - composer install
 
 services:
@@ -21,7 +29,9 @@ after_script:
     fi
 
 before_script:
-  - pecl install pthreads-2.0.10
+  - if [ $TRAVIS_PHP_VERSION = '7.0' ]; then pecl install pthreads; else pecl install pthreads-2.0.10; fi
+  # run daemon
+  - php tests/startDaemon.php > /dev/null &
 
 cache:
   directories:
