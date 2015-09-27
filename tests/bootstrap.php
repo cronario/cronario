@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('Europe/Kiev');
+
 require __DIR__."/../vendor/autoload.php";
 
 /**
@@ -8,7 +10,4 @@ require __DIR__."/../vendor/autoload.php";
 
 shell_exec('php startDaemon.php > /dev/null &');
 
-use \Cronario\Facade as Facade;
-use \Cronario\Producer as Producer;
-
-Facade::addProducer(new Producer());
+\Cronario\Facade::addProducer(new \Cronario\Producer());

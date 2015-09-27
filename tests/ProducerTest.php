@@ -3,6 +3,7 @@
 
 namespace Cronario\Test;
 
+use Cronario\Facade;
 use Cronario\Producer;
 
 class ProducerTest extends \PHPUnit_Framework_TestCase
