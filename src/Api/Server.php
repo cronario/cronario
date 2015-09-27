@@ -35,7 +35,7 @@ class Server
             $result = $job->getResult();
             if ($result instanceof ResultException) {
                 $response[self::P_RESPONSE_MSG] = 'Job result ' . $jobId;
-                $response[self::P_RESPONSE_RESULT] = $result->toArray(true);
+                $response[self::P_RESPONSE_RESULT] = $result->toArray();
             } else {
                 $response[self::P_RESPONSE_MSG] = 'Job result not ready : ' . $jobId;
             }

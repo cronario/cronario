@@ -428,7 +428,6 @@ class Producer
 
             /** @var $manager \Thread */
             if (!$manager->isRunning()) {
-                // $manager->join();
                 $this->getLogger()->trace("Daemon clean old manager : {$managerKey}");
                 unset($this->managerSet[$managerKey]);
             }

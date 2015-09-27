@@ -10,6 +10,7 @@ class ResultTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
+
         \Result\ResultException::setClassIndexMap([
             'Cronario\\Exception\\ResultException' => 1,
         ]);

@@ -10,18 +10,19 @@ use \Cronario\Producer;
 class FacadeTest extends \PHPUnit_Framework_TestCase
 {
 
-    protected function tearDown()
+    public function setUp()
     {
-        Facade::cleanProducers();
+        \Cronario\Facade::addProducer(new \Cronario\Producer());
     }
 
+    public function tearDown()
+    {
+        \Cronario\Facade::cleanProducers();
+    }
 
-    /**
-     * @expectedException \Cronario\Exception\FacadeException
-     */
     public function testAddProducerDefault()
     {
-        Facade::addProducer(new Producer());
+        $this->assertEquals(Producer::DEFAULT_APP_ID, Facade::getProducer()->getAppId());
     }
 
 

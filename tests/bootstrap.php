@@ -11,5 +11,3 @@ require __DIR__ . "/../vendor/autoload.php";
 if (getenv('TRAVIS') != true) {
     shell_exec('php startDaemon.php > /dev/null &');
 }
-
-\Cronario\Facade::addProducer(new \Cronario\Producer());

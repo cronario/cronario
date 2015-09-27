@@ -17,14 +17,19 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function setUp()
     {
         $this->job = new Job();
-    }
 
-    public function tearDown()
-    {
+        \Cronario\Facade::addProducer(new \Cronario\Producer());
+
         ResultException::setClassIndexMap([
             'Cronario\\Exception\\ResultException' => 1,
             'Cronario\\Test\\ResultException' => 2,
         ]);
+
+    }
+
+    public function tearDown()
+    {
+        \Cronario\Facade::cleanProducers();
     }
 
     public function testJobCreate()

@@ -337,13 +337,11 @@ class Queue
     /**
      * @param string $key
      *
-     * @return string mixed
+     * @return string
      */
     protected function getQueueNameFromKey($key)
     {
-        list($namespace, $queueName, $state) = explode(':', $key);
-
-        return $queueName;
+        return explode(':', $key)[1];
     }
 
     /**
@@ -498,7 +496,6 @@ class Queue
         $payload = $this->getPayload($id);
 
         if (!in_array($payload[self::JOB_PAYLOAD_STATE], [self::STATE_RESERVED, self::STATE_BURIED])) {
-            // throw new QueueException(' Cannot delete state unsupported!' . $payload[self::P_JOB_PAYLOAD_STATE]);
             return true;
         }
 
