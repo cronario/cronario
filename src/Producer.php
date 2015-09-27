@@ -6,6 +6,7 @@ use Cronario\Exception\ProducerException;
 use Cronario\Exception\WorkerException;
 use Cronario\Logger\LoggerInterface;
 use Cronario\Storage\StorageInterface;
+use Predis\Client;
 
 class Producer
 {
@@ -33,8 +34,8 @@ class Producer
             $this->logger = new Logger\Journal();
         }
 
-        if (!isset($options[self::P_REDIS]) || !($options[self::P_REDIS] instanceof \Predis\Client)) {
-            $this->redis = new \Predis\Client(self::DEFAULT_REDIS_SERVER);
+        if (!isset($options[self::P_REDIS]) || !($options[self::P_REDIS] instanceof Client)) {
+            $this->redis = new Client(self::DEFAULT_REDIS_SERVER);
         }
 
         if (!isset($options[self::P_STORAGE]) || !($options[self::P_STORAGE] instanceof StorageInterface)) {
@@ -130,7 +131,7 @@ class Producer
     }
 
     /**
-     * @return \Predis\Client
+     * @return Client
      */
     public function getRedis()
     {
@@ -138,11 +139,11 @@ class Producer
     }
 
     /**
-     * @param \Predis\Client $redis
+     * @param Client $redis
      *
      * @return $this
      */
-    protected function setRedis(\Predis\Client $redis)
+    protected function setRedis(Client $redis)
     {
         $this->redis = $redis;
 
@@ -620,13 +621,13 @@ class Producer
             if (!$this->processExists()) {
 
                 $this->getLogger()
-                    ->warning("Daemon is ill cant find process {$processId}, try clean data and continue starting");
+                    ->warning("Daemon is ill can't find process {$processId}, try clean data and continue starting");
                 $this->cleanData();
 
                 // continue start
 
             } else {
-                $this->getLogger()->trace("Daemon cant START, cause state : {$state}, and process exists {$processId}");
+                $this->getLogger()->trace("Daemon can't START, cause state : {$state}, and process exists {$processId}");
 
                 return false;
             }
@@ -669,13 +670,13 @@ class Producer
 
 
         if (in_array($state, [self::STATE_T_STOP, self::STATE_T_KILL])) {
-            $this->getLogger()->trace("Daemon cant STOP, cause state : {$state}");
+            $this->getLogger()->trace("Daemon can't STOP, cause state : {$state}");
 
             return true;
         }
 
         if (!in_array($state, [self::STATE_T_START])) {
-            $this->getLogger()->trace("Daemon cant STOP, cause daemon not START");
+            $this->getLogger()->trace("Daemon can't STOP, cause daemon not START");
 
             return true;
         }
@@ -710,13 +711,13 @@ class Producer
         $state = $this->getState();
 
         if (in_array($state, [self::STATE_T_KILL])) {
-            $this->getLogger()->trace("Daemon cant KILL, cause state : {$state}");
+            $this->getLogger()->trace("Daemon can't KILL, cause state : {$state}");
 
             return true;
         }
 
         if (!in_array($state, [self::STATE_T_START, self::STATE_T_STOP])) {
-            $this->getLogger()->trace("Daemon cant KILL, cause daemon not START or STOP");
+            $this->getLogger()->trace("Daemon can't KILL, cause daemon not START or STOP");
 
             return true;
         }

@@ -64,7 +64,7 @@ abstract class AbstractWorker
 
     private static $loadedConfigSet = [];
     protected static $config = [];
-    protected static $configFile; // __DIR__ . '/' . self::DEFAULT_CONFIG_FILENAME;
+    protected static $configFile;
 
     /**
      * @return array|mixed|string
@@ -119,7 +119,7 @@ abstract class AbstractWorker
         $calledClass = get_called_class();
 
         // Load config
-        if (null === self::$loadedConfigSet[$calledClass]) {
+        if (!isset(self::$loadedConfigSet[$calledClass]) || null === self::$loadedConfigSet[$calledClass]) {
             self::$loadedConfigSet[$calledClass] = array_merge(self::$configDefault, static::loadConfig());
         }
 

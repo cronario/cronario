@@ -41,11 +41,12 @@ class ProducerTest extends \PHPUnit_Framework_TestCase
 
         // cant do like this
         // cause method start will starts main loop (forever loop)
+        // The producer starts on bootstrap testing
 
-        // $this->producer->start();
-        // $this->assertTrue($this->producer->isStateStart());
-        // $this->producer->stop();
+//         $this->producer->start();
+//         $this->assertTrue($this->producer->isStateStart());
+//         $this->producer->stop();
 
-        $this->assertFalse($this->producer->isStateStart());
+        $this->assertTrue($this->producer->isStateStart());
     }
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace Cronario\Example;
+namespace Cronario\Test;
 
 use Cronario\AbstractJob;
 use Cronario\AbstractWorker;
@@ -10,7 +10,8 @@ class Worker extends AbstractWorker
 
     protected static $config
         = [
-            'superKey' => 'superValue'
+            'superKey' => 'superValue',
+            'params' => []
         ];
 
     //endregion ****************************************************************

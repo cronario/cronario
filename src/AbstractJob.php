@@ -2,6 +2,7 @@
 
 namespace Cronario;
 
+use Cron\CronExpression;
 use Cronario\Exception\JobException;
 use Cronario\Exception\ResultException;
 
@@ -330,7 +331,7 @@ abstract class AbstractJob implements \Serializable
         return $this;
     }
 
-    static protected $resultClass = '\\Cronario\\Exception\\ResultException';
+    protected static $resultClass = '\\Cronario\\Exception\\ResultException';
 
     /**
      * @var ResultException
@@ -643,7 +644,7 @@ abstract class AbstractJob implements \Serializable
             return -1;
         }
 
-        $object = \Cron\CronExpression::factory($value);
+        $object = CronExpression::factory($value);
 
         $format = 'Y-m-d H:i:s';
         $timeFirst = strtotime($object->getNextRunDate()->format($format));

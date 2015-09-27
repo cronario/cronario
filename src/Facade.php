@@ -122,33 +122,25 @@ final class Facade
 
             /** @var $producer Producer */
             $redis = $producer->getRedis();
+            $keys = [
+                'stat' => $redis->keys(Manager::REDIS_NS_STATS . '*'),
+                'live' => $redis->keys(Manager::REDIS_NS_LIVE . '*')
+            ];
 
-            $statsKeys = $redis->keys(Manager::REDIS_NS_STATS . '*');
+            foreach ($keys as $type => $statsKeys) {
+                foreach ($statsKeys as $statsKey) {
+                    $parse = Manager::parseManagerStatKey($statsKey);
+                    if ($appId != $parse['appId']) {
+                        continue;
+                    }
 
-            foreach ($statsKeys as $statsKey) {
-                $parse = Manager::parseManagerStatKey($statsKey);
-                if ($appId != $parse['appId']) {
-                    continue;
+                    $statsItemData = $redis->hgetall($statsKey);
+                    $statsItemData['workerClass'] = $parse['workerClass'];
+                    $statsItemData['appId'] = $parse['appId'];
+                    $managersStats[$parse['appId']][$type][] = $statsItemData;
                 }
-
-                $statsItemData = $redis->hgetall($statsKey);
-                $statsItemData['workerClass'] = $parse['workerClass'];
-                $statsItemData['appId'] = $parse['appId'];
-                $managersStats[$parse['appId']]['stat'][] = $statsItemData;
             }
 
-            $liveKeys = $redis->keys(Manager::REDIS_NS_LIVE . '*');
-            foreach ($liveKeys as $liveKey) {
-                $parse = Manager::parseManagerStatKey($liveKey);
-                if ($appId != $parse['appId']) {
-                    continue;
-                }
-
-                $liveItemData = $redis->hgetall($liveKey);
-                $liveItemData['workerClass'] = $parse['workerClass'];
-                $liveItemData['appId'] = $parse['appId'];
-                $managersStats[$parse['appId']]['live'][] = $liveItemData;
-            }
         }
 
         return $managersStats;

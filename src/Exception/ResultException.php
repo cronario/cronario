@@ -64,7 +64,7 @@ class ResultException extends IkResultException
      */
     public function isQueued()
     {
-        return ($this->_status === self::STATUS_QUEUED);
+        return ($this->status === self::STATUS_QUEUED);
     }
 
     /**
@@ -72,7 +72,7 @@ class ResultException extends IkResultException
      */
     public function isRetry()
     {
-        return ($this->_status === self::STATUS_RETRY);
+        return ($this->status === self::STATUS_RETRY);
     }
 
     /**
@@ -80,7 +80,7 @@ class ResultException extends IkResultException
      */
     public function isRedirect()
     {
-        return ($this->_status === self::STATUS_REDIRECT);
+        return ($this->status === self::STATUS_REDIRECT);
     }
 
 }

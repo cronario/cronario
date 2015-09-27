@@ -16,13 +16,12 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
     }
 
 
+    /**
+     * @expectedException \Cronario\Exception\FacadeException
+     */
     public function testAddProducerDefault()
     {
         Facade::addProducer(new Producer());
-
-        $producer = Facade::getProducer();
-        $this->assertInstanceOf('\\Cronario\\Producer', $producer);
-        $this->assertEquals(Producer::DEFAULT_APP_ID, $producer->getAppId());
     }
 
 
@@ -62,6 +61,18 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
         ]));
 
     }
+
+    public function testGetStorage()
+    {
+        $appId = 'test';
+
+        Facade::addProducer(new Producer([
+            Producer::P_APP_ID => $appId,
+        ]));
+
+        $this->assertInstanceOf('\\Cronario\\Storage\\StorageInterface',Facade::getStorage($appId));
+    }
+
 
 
 }

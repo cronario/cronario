@@ -3,10 +3,29 @@
 
 namespace Cronario\Test;
 
-use \Cronario\Example\Job;
+
+use Cronario\AbstractJob;
+use Result\ResultException;
 
 class JobTest extends \PHPUnit_Framework_TestCase
 {
+    /**
+     * @var AbstractJob
+     */
+    private $job;
+
+    public function setUp()
+    {
+        $this->job = new Job();
+    }
+
+    public function tearDown()
+    {
+        ResultException::setClassIndexMap([
+            'Cronario\\Exception\\ResultException' => 1,
+            'Cronario\\Test\\ResultException' => 2,
+        ]);
+    }
 
     public function testJobCreate()
     {
@@ -40,7 +59,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertInternalType('int', $job->getStartOn());
         $this->assertInternalType('int', $job->getDeleteOn());
         $this->assertInternalType('int', $job->getExpiredOn());
-        $this->assertEquals('\\Cronario\\Example\\Job', $job->getJobClass());
+        $this->assertEquals('\\Cronario\\Test\\Job', $job->getJobClass());
 
     }
 
@@ -293,5 +312,53 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $job->setPriority(Job::P_PRIORITY_T_LOW);
         $this->assertEquals(Job::P_PRIORITY_T_LOW, $job->getPriority());
 
+    }
+
+    public function testJobResult()
+    {
+        $job = clone $this->job;
+
+        $job->setAuthor('phpunit');
+        $job->setComment('test');
+        $job->setSchedule('* * * * *');
+        $job->setWorkerClass('\\Cronario\\Test\\Worker');
+
+        $this->assertInstanceOf('\\Result\\ResultException', $job());
+    }
+
+    /**
+     * @expectedException \Cronario\Exception\JobException
+     */
+    public function testExpireOnException()
+    {
+        $date = new \DateTime('now');
+        $this->job->setExpiredOn($date);
+    }
+
+    /**
+     * @expectedException \Cronario\Exception\JobException
+     */
+    public function testCreateOnException()
+    {
+        $date = new \DateTime('now');
+        $this->job->setCreateOn($date);
+    }
+
+    public function testJobIsDone()
+    {
+        $job = new Job([
+            Job::P_PARAMS  => [
+                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
+                Job::P_PARAM_SLEEP           => 1,
+            ],
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_IS_SYNC => true,
+            Job::P_DEBUG   => true,
+        ]);
+
+        $job->setExpectedResult(Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS);
+
+        $this->assertTrue($job()->isSuccess());
     }
 }

@@ -30,7 +30,7 @@ class Server
 
         /** @var AbstractJob $job */
         $job = AbstractJob::find($jobId, $appId);
-
+        $response = [];
         if (is_object($job)) {
             $result = $job->getResult();
             if ($result instanceof ResultException) {
@@ -58,7 +58,7 @@ class Server
     {
         /** @var AbstractJob $job */
         $job = unserialize($data);
-
+        $response = [];
         $response[self::P_RESPONSE_MSG] = 'do job';
 
         if ($job->isSync()) {
@@ -75,8 +75,6 @@ class Server
      */
     public static function catchAction()
     {
-        $response = null;
-
 
         if ($_REQUEST[Client::P_ACTION] === Client::ACTION_GET_JOB_RESULT) {
 
