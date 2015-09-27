@@ -21,7 +21,7 @@ after_script:
     fi
 
 before_script:
-  - pecl install pthreads
+  - pecl install pthreads-2.0.10
 
 cache:
   directories:
