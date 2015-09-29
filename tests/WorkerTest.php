@@ -36,6 +36,7 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
     public function testFactory()
     {
         $testWorker = AbstractWorker::factory('\Cronario\Test\Worker');
+
         $this->assertInstanceOf('\Cronario\AbstractWorker', $testWorker);
     }
 
