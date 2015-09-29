@@ -80,6 +80,31 @@ class JobTest extends \PHPUnit_Framework_TestCase
     }
 
 
+    public function testJoStartOnExceptions()
+    {
+        $this->setExpectedException('\Cronario\Exception\JobException');
+
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        $job->setStartOn('xxx');
+    }
+
+    public function testJoDeleteOnExceptions()
+    {
+        $this->setExpectedException('\Cronario\Exception\JobException');
+
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        $job->setDeleteOn('xxx');
+    }
+
+
     public function testJobDataCallbackCreate()
     {
         $job = new Job([
@@ -230,6 +255,22 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $job->setId('new');
     }
 
+    public function testSetSync()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        // default
+        $this->assertFalse($job->isSync());
+
+        $job->setSync(false);
+        $this->assertFalse($job->isSync());
+        $job->setSync(true);
+        $this->assertTrue($job->isSync());
+    }
+
 
     public function testGetSetWorkerClass()
     {
@@ -280,12 +321,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_AUTHOR  => 'author-xxx',
         ]);
 
-
         $this->assertEquals(0, $job->getAttempts());
+        $this->assertEquals(0, $job->countAttemptQueueDelay());
 
         $job->setAttemptsMax(99);
         $this->assertEquals(99, $job->getAttemptsMax());
-
 
         $job->setAttemptStrategy(Job::P_ATTEMPT_STRATEGY_T_EXP);
         $this->assertEquals(Job::P_ATTEMPT_STRATEGY_T_EXP, $job->getAttemptStrategy());
@@ -389,7 +429,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
         $job->setDebug(false);
         $job->addDebugData('item1', 'value1');
-        $this->assertFalse($job->isDebug());;
+        $this->assertFalse($job->isDebug());
 
         $job->setDebug(true);
         $job->addDebugData('item1', 'value1');
@@ -403,6 +443,21 @@ class JobTest extends \PHPUnit_Framework_TestCase
             ]
         ]);
         $this->assertEquals(2, count($job->getDebugData()));
+    }
+
+    public function testJobParentId()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        $parentId = self::callMethod($job, 'getParentId', []);
+        $this->assertNull($parentId);
+
+        self::callMethod($job, 'setParentId', ['xxx']);
+        $parentId = self::callMethod($job, 'getParentId', []);
+        $this->assertEquals('xxx', $parentId);
     }
 
 }
