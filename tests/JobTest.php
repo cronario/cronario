@@ -22,7 +22,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
         ResultException::setClassIndexMap([
             'Cronario\\Exception\\ResultException' => 1,
-            'Cronario\\Test\\ResultException' => 2,
+            'Cronario\\Test\\ResultException'      => 2,
         ]);
 
     }
@@ -31,6 +31,17 @@ class JobTest extends \PHPUnit_Framework_TestCase
     {
         \Cronario\Facade::cleanProducers();
     }
+
+
+    protected static function callMethod($obj, $name, array $args)
+    {
+        $class = new \ReflectionClass($obj);
+        $method = $class->getMethod($name);
+        $method->setAccessible(true);
+
+        return $method->invokeArgs($obj, $args);
+    }
+
 
     public function testJobCreate()
     {
@@ -366,4 +377,32 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
         $this->assertTrue($job()->isSuccess());
     }
+
+
+    public function testJobDebug()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_IS_SYNC => true,
+        ]);
+
+        $job->setDebug(false);
+        $job->addDebugData('item1', 'value1');
+        $this->assertFalse($job->isDebug());;
+
+        $job->setDebug(true);
+        $job->addDebugData('item1', 'value1');
+        $this->assertTrue($job->isDebug());
+        $this->assertEquals(1, count($job->getDebugData()));
+
+        self::callMethod($job, 'setDebugData', [
+            [
+                'item1' => 'value1',
+                'item2' => 'value2',
+            ]
+        ]);
+        $this->assertEquals(2, count($job->getDebugData()));
+    }
+
 }
