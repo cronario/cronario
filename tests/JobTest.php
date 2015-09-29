@@ -449,4 +449,56 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals('xxx', $parentId);
     }
 
+
+    public function testSaveJob()
+    {
+        $job = new Job([
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+        ]);
+
+        $this->assertFalse($job->isStored());
+        $job->save();
+        $this->assertTrue($job->isStored());
+
+        $id = $job->getId();
+        $loadedJob = \Cronario\Facade::getProducer()->getStorage()->find($id);;
+        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
+
+    }
+
+//
+//    public function testSaveJobMongo()
+//    {
+//
+//        $appId = 'app-mongo-storage';
+//
+//        \Cronario\Facade::addProducer(new \Cronario\Producer([
+//            \Cronario\Producer::P_APP_ID  => $appId,
+//            \Cronario\Producer::P_STORAGE => new \Cronario\Storage\Mongo([
+//                [
+//                    'server'     => \Cronario\Storage\Mongo::CONFIG_SERVER_DEFAULT,
+//                    'database'   => 'cronario',
+//                    'collection' => 'jobs',
+//                ]
+//            ]),
+//        ]));
+//
+//        $job = new Job([
+//            Job::P_COMMENT => 'comment-xxx',
+//            Job::P_AUTHOR  => 'author-xxx',
+//            Job::P_APP_ID  => $appId,
+//        ]);
+//
+//        $this->assertFalse($job->isStored());
+//        $job->save();
+//        $this->assertTrue($job->isStored());
+//
+//        $id = $job->getId();
+//        $loadedJob = \Cronario\Facade::getProducer($appId)->getStorage()->find($id);;
+//        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
+//
+//    }
+
+
 }
