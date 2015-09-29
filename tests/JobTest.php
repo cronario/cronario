@@ -32,17 +32,6 @@ class JobTest extends \PHPUnit_Framework_TestCase
         \Cronario\Facade::cleanProducers();
     }
 
-
-    protected static function callMethod($obj, $name, array $args)
-    {
-        $class = new \ReflectionClass($obj);
-        $method = $class->getMethod($name);
-        $method->setAccessible(true);
-
-        return $method->invokeArgs($obj, $args);
-    }
-
-
     public function testJobCreate()
     {
         $job = new Job();
@@ -436,7 +425,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertTrue($job->isDebug());
         $this->assertEquals(1, count($job->getDebugData()));
 
-        self::callMethod($job, 'setDebugData', [
+        Helpers::callMethod($job, 'setDebugData', [
             [
                 'item1' => 'value1',
                 'item2' => 'value2',
@@ -452,11 +441,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_AUTHOR  => 'author-xxx',
         ]);
 
-        $parentId = self::callMethod($job, 'getParentId', []);
+        $parentId = Helpers::callMethod($job, 'getParentId', []);
         $this->assertNull($parentId);
 
-        self::callMethod($job, 'setParentId', ['xxx']);
-        $parentId = self::callMethod($job, 'getParentId', []);
+        Helpers::callMethod($job, 'setParentId', ['xxx']);
+        $parentId = Helpers::callMethod($job, 'getParentId', []);
         $this->assertEquals('xxx', $parentId);
     }
 
