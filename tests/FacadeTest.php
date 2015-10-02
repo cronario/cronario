@@ -12,13 +12,15 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
 
     public function setUp()
     {
-        \Cronario\Facade::addProducer(new \Cronario\Producer());
+        // adds defaul producer to facade
+        Facade::addProducer(new Producer());
     }
 
     public function tearDown()
     {
-        \Cronario\Facade::cleanProducers();
+        Facade::cleanProducers();
     }
+
 
     public function testAddProducerDefault()
     {
@@ -28,7 +30,7 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
 
     public function testAddProducerCustom()
     {
-        $appId = 'customAppId';
+        $appId = 'app-id-custom';
 
         Facade::addProducer(new Producer([
             Producer::P_APP_ID => $appId,
@@ -44,12 +46,12 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
     {
         $this->setExpectedException('\\Cronario\\Exception\\FacadeException');
 
-        Facade::getProducer('undefined');
+        Facade::getProducer('app-id-undefined');
     }
 
     public function testAddProducerTwiceException()
     {
-        $appId = 'customAppId';
+        $appId = 'app-id-custom';
 
         Facade::addProducer(new Producer([
             Producer::P_APP_ID => $appId,
@@ -65,7 +67,7 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
 
     public function testGetStorage()
     {
-        $appId = 'test';
+        $appId = 'app-id-custom';
 
         Facade::addProducer(new Producer([
             Producer::P_APP_ID => $appId,
@@ -76,6 +78,12 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
 
     public function testGetDefaultProducerWithNullArgument()
     {
+        $appId = 'app-id-custom';
+
+        Facade::addProducer(new Producer([
+            Producer::P_APP_ID => $appId,
+        ]));
+
         $producer = Facade::getProducer(null);
 
         $this->assertEquals(Producer::DEFAULT_APP_ID, $producer->getAppId());

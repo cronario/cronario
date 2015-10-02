@@ -17,7 +17,14 @@ abstract class AbstractJob implements \Serializable
     public function __construct($data = [])
     {
         $this->data = $data;
+        $this->_init();
+    }
 
+    /**
+     * @throws JobException
+     */
+    public function _init()
+    {
         if ($this->isStored()) {
             $this->unserializeCallbacks();
             $this->unserializeResult();
@@ -29,6 +36,7 @@ abstract class AbstractJob implements \Serializable
             $this->serializeCallbacks();
         }
     }
+
 
     // region SERIALIZE ******************************************************************
 
@@ -46,6 +54,7 @@ abstract class AbstractJob implements \Serializable
     public function unserialize($serialized)
     {
         $this->data = unserialize($serialized);
+        $this->_init();
     }
 
     // endregion  **************************************************************************
@@ -997,16 +1006,19 @@ abstract class AbstractJob implements \Serializable
     protected function unserializeCallbacks()
     {
         $serialized = $this->getData(self::P_CALLBACK);
-        if (is_array($serialized)) {
-            foreach ($serialized as $type => $jobs) {
-                if (is_array($jobs)) {
-                    foreach ($jobs as $index => $job) {
-                        $this->callbacks[$type][] = unserialize($job);
-                    }
-                }
-            }
+        if (!is_array($serialized)) {
+            return $this;
         }
 
+        foreach ($serialized as $type => $jobs) {
+            if (!is_array($jobs)) {
+                continue;
+            }
+
+            foreach ($jobs as $index => $job) {
+                $this->callbacks[$type][] = unserialize($job);
+            }
+        }
         return $this;
     }
 
@@ -1026,7 +1038,8 @@ abstract class AbstractJob implements \Serializable
                 if ($job instanceof AbstractJob) {
                     $serialized[$type][] = serialize($job);
                 } else {
-                    throw new JobException('callback type is not instance of AbstractJob or is_string');
+                    continue;
+                    // throw new JobException('callback type is not instance of AbstractJob or is_string');
                 }
             }
         }

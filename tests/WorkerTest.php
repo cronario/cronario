@@ -40,4 +40,16 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
         $this->assertInstanceOf('\Cronario\AbstractWorker', $testWorker);
     }
 
+
+    public function testWorkerGetConfig()
+    {
+        $testWorker = AbstractWorker::factory('\Cronario\Test\Worker');
+
+        $full = $testWorker->getConfig();
+        $this->assertInternalType('array', $full);
+
+        $item = $testWorker->getConfig(AbstractWorker::CONFIG_P_MANAGER_POOL_SIZE);
+        $this->assertNotNull($item);
+    }
+
 }

@@ -3,6 +3,7 @@
 namespace Cronario\Api;
 
 use Cronario\AbstractJob;
+use Cronario\Facade;
 use Cronario\Producer;
 use Cronario\Exception\ResultException;
 
@@ -29,7 +30,8 @@ class Server
         $appId = filter_var($appId, FILTER_SANITIZE_STRING);
 
         /** @var AbstractJob $job */
-        $job = AbstractJob::find($jobId, $appId);
+
+        $job = Facade::getStorage($appId)->find($jobId);
         $response = [];
         if (is_object($job)) {
             $result = $job->getResult();
@@ -62,7 +64,11 @@ class Server
         $response[self::P_RESPONSE_MSG] = 'do job';
 
         if ($job->isSync()) {
-            $response[self::P_RESPONSE_RESULT] = $job();
+            /** @var$result ResultException */
+            $result = $job();
+            if($result instanceof ResultException){
+                $response[self::P_RESPONSE_RESULT] = $result->toArray();
+            }
         } else {
             $response[self::P_RESPONSE_INFO] = $job();
         }

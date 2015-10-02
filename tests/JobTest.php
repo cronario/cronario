@@ -4,27 +4,12 @@
 namespace Cronario\Test;
 
 
-use Cronario\AbstractJob;
-use Result\ResultException;
-
 class JobTest extends \PHPUnit_Framework_TestCase
 {
-    /**
-     * @var AbstractJob
-     */
-    private $job;
 
     public function setUp()
     {
-        $this->job = new Job();
-
         \Cronario\Facade::addProducer(new \Cronario\Producer());
-
-        ResultException::setClassIndexMap([
-            'Cronario\\Exception\\ResultException' => 1,
-            'Cronario\\Test\\ResultException'      => 2,
-        ]);
-
     }
 
     public function tearDown()
@@ -53,7 +38,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
         ]);
 
         $this->assertInstanceOf('\\Cronario\\AbstractJob', $job);
-
+        $this->assertNull($job->getFinishOn());
         $this->assertFalse($job->isStored());
         $this->assertEquals('comment-xxx', $job->getComment());
         $this->assertEquals('author-xxx', $job->getAuthor());
@@ -68,29 +53,51 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     }
 
-
-    public function testJoStartOnExceptions()
+    public function testJobDataUseSetters()
     {
+        $job = new Job();
+
+        $job->setComment('comment-xxx');
+        $job->setAuthor('author-xxx');
+
+        $this->assertEquals('comment-xxx', $job->getComment());
+        $this->assertEquals('author-xxx', $job->getAuthor());
+    }
+
+    public function testJobCreateOnExceptions()
+    {
+        $job = new Job();
+
         $this->setExpectedException('\Cronario\Exception\JobException');
 
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
+        $job->setCreateOn('xxx');
+    }
+
+    public function testJobStartOnExceptions()
+    {
+        $job = new Job();
+
+        $this->setExpectedException('\Cronario\Exception\JobException');
 
         $job->setStartOn('xxx');
     }
 
-    public function testJoDeleteOnExceptions()
+    public function testJobDeleteOnExceptions()
     {
+        $job = new Job();
+
         $this->setExpectedException('\Cronario\Exception\JobException');
 
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
-
         $job->setDeleteOn('xxx');
+    }
+
+    public function testJobExpireOnException()
+    {
+        $job = new Job();
+
+        $this->setExpectedException('\Cronario\Exception\JobException');
+
+        $job->setExpiredOn('xxx');
     }
 
 
@@ -140,15 +147,13 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $commentSource = 'comment-xxx';
 
         $job = new Job([
-            Job::P_COMMENT => $commentSource,
-            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_COMMENT => $commentSource
         ]);
 
         $clonedJob = clone $job;
-        $clonedComment = $clonedJob->getComment('comment-xxx');
 
         $this->assertInstanceOf('\\Cronario\\AbstractJob', $clonedJob);
-        $this->assertEquals($commentSource, $clonedComment);
+        $this->assertEquals($commentSource, $clonedJob->getComment());
     }
 
     public function testGetQueueDelay()
@@ -160,8 +165,18 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
         $delay = $job->getQueueDelay();
 
-        $this->assertLessThan(15, $delay);
-        $this->assertGreaterThan(5, $delay);
+        $this->assertLessThan(12, $delay);
+        $this->assertGreaterThan(8, $delay);
+
+        $job2 = new Job([
+            Job::P_IS_SYNC  => false,
+            Job::P_START_ON => time() + 10,
+            Job::P_SCHEDULE => '* * * * *',
+        ]);
+
+        $delay = $job2->getQueueDelay();
+        $this->assertGreaterThan(8, $delay);
+
     }
 
 
@@ -179,7 +194,6 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertInternalType('array', $dataFull);
     }
 
-
     public function testUnsetData()
     {
         $commentSource = 'comment-xxx';
@@ -189,12 +203,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_AUTHOR  => 'author-xxx',
         ]);
 
-        $comment = $job->getData(Job::P_COMMENT);
-        $this->assertEquals($comment, $commentSource);
+        $this->assertEquals($commentSource, $job->getData(Job::P_COMMENT));
 
         $job->unsetData(Job::P_COMMENT);
-        $commentAfterDelete = $job->getData(Job::P_COMMENT);
-        $this->assertNotEquals($comment, $commentAfterDelete);
+        $this->assertNotEquals($commentSource, $job->getData(Job::P_COMMENT));
+        $this->assertNull($job->getData(Job::P_COMMENT));
     }
 
 
@@ -210,11 +223,12 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_IS_SYNC => false,
         ]);
 
-        $paramFull = $job->getParam(null);
-        $this->assertInternalType('array', $paramFull);
 
-        $paramFull = $job->getParam();
-        $this->assertInternalType('array', $paramFull);
+        // param full set
+        $this->assertInternalType('array', $job->getParam(null));
+
+        // param full set
+        $this->assertInternalType('array', $job->getParam());
 
         $this->assertEquals(9, $job->getParam(Job::P_PARAM_SLEEP));
 
@@ -222,40 +236,67 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(100, $job->getParam(Job::P_PARAM_SLEEP));
     }
 
+    public function testGetSetParams()
+    {
+        $job = new Job([
+
+            Job::P_COMMENT => 'comment-xxx',
+            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_IS_SYNC => false,
+        ]);
+
+        $job->setParam([
+            Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
+            Job::P_PARAM_SLEEP           => 9,
+        ]);
+
+        // param full set
+        $this->assertInternalType('array', $job->getParam(null));
+
+        // param full set
+        $this->assertInternalType('array', $job->getParam());
+    }
+
+
+    const TEST_JOB_ID = 'job-id-xxx';
 
     public function testSetId()
     {
-        $id = 'my-id-xxx';
-
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
-
+        $job = new Job();
 
         $this->assertFalse($job->isStored());
         $this->assertEquals(null, $job->getId());
 
-        $job->setId($id);
-        $this->assertEquals($id, $job->getId());
+        $job->setId(self::TEST_JOB_ID);
+
+        $this->assertEquals(self::TEST_JOB_ID, $job->getId());
         $this->assertTrue($job->isStored());
 
-        $this->setExpectedException('\\Cronario\\Exception\\JobException');
-        $job->setId('new');
     }
+
+
+    public function testSetIdException()
+    {
+
+        $job = new Job();
+        $job->setId(self::TEST_JOB_ID);
+
+        $this->setExpectedException('\\Cronario\\Exception\\JobException');
+
+        $job->setId('new-id-yyy');
+    }
+
 
     public function testSetSync()
     {
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
+        $job = new Job();
 
         // default
         $this->assertFalse($job->isSync());
 
         $job->setSync(false);
         $this->assertFalse($job->isSync());
+
         $job->setSync(true);
         $this->assertTrue($job->isSync());
     }
@@ -265,10 +306,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
     {
         $workerClass = '\\Custom\\Worker\\Class';
 
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
+        $job = new Job();
 
         $job->setWorkerClass($workerClass);
         $this->assertEquals($workerClass, $job->getWorkerClass());
@@ -280,9 +318,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $appId = 'my-app-id-xxx';
 
         $job = new Job([
-            Job::P_APP_ID  => $appId,
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_APP_ID => $appId
         ]);
 
         $this->assertEquals($appId, $job->getAppId());
@@ -292,12 +328,11 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function testGetSetSchedule()
     {
         $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => false,
+            Job::P_IS_SYNC => false
         ]);
 
         $job->setSchedule('* * * * *');
+
         $this->assertEquals('* * * * *', $job->getSchedule());
         $this->assertGreaterThanOrEqual(0, $job->getScheduleDelay());
     }
@@ -305,10 +340,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     public function testGetSetAttempt()
     {
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
+        $job = new Job();
 
         $this->assertEquals(0, $job->getAttempts());
         $this->assertEquals(0, $job->countAttemptQueueDelay());
@@ -341,10 +373,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     public function testGetSetPriority()
     {
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
+        $job = new Job();
 
         // defaults
         $this->assertEquals(Job::P_PRIORITY_T_LOW, $job->getPriority());
@@ -359,135 +388,116 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     }
 
-    public function testJobResult()
+    public function testResult()
     {
-        $job = clone $this->job;
 
-        $job->setAuthor('phpunit');
-        $job->setComment('test');
-        $job->setSchedule('* * * * *');
-        $job->setWorkerClass('\\Cronario\\Test\\Worker');
-
-        $this->assertInstanceOf('\\Result\\ResultException', $job());
-    }
-
-    /**
-     * @expectedException \Cronario\Exception\JobException
-     */
-    public function testExpireOnException()
-    {
-        $date = new \DateTime('now');
-        $this->job->setExpiredOn($date);
-    }
-
-    /**
-     * @expectedException \Cronario\Exception\JobException
-     */
-    public function testCreateOnException()
-    {
-        $date = new \DateTime('now');
-        $this->job->setCreateOn($date);
-    }
-
-    public function testJobIsDone()
-    {
-        $job = new Job([
-            Job::P_PARAMS  => [
-                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
-                Job::P_PARAM_SLEEP           => 1,
-            ],
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => true,
-            Job::P_DEBUG   => true,
+        \Result\ResultException::setClassIndexMap([
+            'Cronario\\Exception\\ResultException' => 1,
+            'Cronario\\Test\\ResultException'      => 2,
         ]);
 
-        $job->setExpectedResult(Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS);
+        $job = new Job();
+        $result = new \Cronario\Test\ResultException(\Cronario\Test\ResultException::FAILURE_XXX);
+        $job->setResult($result);
 
-        $this->assertTrue($job()->isSuccess());
+        // defaults
+        $this->assertInstanceOf('\\Cronario\\Test\\ResultException', $job->getResult());
+
+        // hight
+        $job->setPriority(Job::P_PRIORITY_T_HIGH);
+        $this->assertEquals(Job::P_PRIORITY_T_HIGH, $job->getPriority());
+
+        // low
+        $job->setPriority(Job::P_PRIORITY_T_LOW);
+        $this->assertEquals(Job::P_PRIORITY_T_LOW, $job->getPriority());
+
     }
 
 
+
+    public function testJobResult()
+    {
+        $job = new Job();
+
+        $job->setWorkerClass('\\Cronario\\Test\\Worker');
+
+        $result = $job();
+
+        $this->assertInstanceOf('\\Result\\ResultException', $result);
+    }
+
+//
+//    /**
+//     * @expectedException \Cronario\Exception\JobException
+//     */
+//    public function testCreateOnException()
+//    {
+//        $date = new \DateTime('now');
+//        $this->job->setCreateOn($date);
+//    }
+//
+//    public function testJobIsDone()
+//    {
+//        $job = new Job([
+//            Job::P_PARAMS  => [
+//                Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
+//                Job::P_PARAM_SLEEP           => 1,
+//            ],
+//            Job::P_COMMENT => 'comment-xxx',
+//            Job::P_AUTHOR  => 'author-xxx',
+//            Job::P_IS_SYNC => true,
+//            Job::P_DEBUG   => true,
+//        ]);
+//
+//        $job->setExpectedResult(Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS);
+//
+//        $this->assertTrue($job()->isSuccess());
+//    }
+//
+//
     public function testJobDebug()
     {
         $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-            Job::P_IS_SYNC => true,
-        ]);
-
-        $job->setDebug(false);
-        $job->addDebugData('item1', 'value1');
-        $this->assertFalse($job->isDebug());
-
-        $job->setDebug(true);
-        $job->addDebugData('item1', 'value1');
-        $this->assertTrue($job->isDebug());
-        $this->assertEquals(1, count($job->getDebugData()));
-
-        Helpers::callMethod($job, 'setDebugData', [
-            [
+            Job::P_IS_SYNC    => true,
+            Job::P_DEBUG_DATA => [
                 'item1' => 'value1',
                 'item2' => 'value2',
             ]
         ]);
-        $this->assertEquals(2, count($job->getDebugData()));
+
+        $job->setDebug(false);
+        $job->addDebugData('item3', 'value3');
+        $this->assertFalse($job->isDebug());
+
+        $job->setDebug(true);
+        $job->addDebugData('item3', 'value3');
+        $this->assertTrue($job->isDebug());
+
+
+        $this->assertEquals(3, count($job->getDebugData()));
     }
 
     public function testJobParentId()
     {
-        $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
-        ]);
 
+        $job = new Job();
         $parentId = Helpers::callMethod($job, 'getParentId', []);
         $this->assertNull($parentId);
 
-        Helpers::callMethod($job, 'setParentId', ['xxx']);
-        $parentId = Helpers::callMethod($job, 'getParentId', []);
-        $this->assertEquals('xxx', $parentId);
-    }
 
-
-    public function testSaveJob()
-    {
+        $pid = 'parentId-xxx';
         $job = new Job([
-            Job::P_COMMENT => 'comment-xxx',
-            Job::P_AUTHOR  => 'author-xxx',
+            Job::P_PARENT_ID => $pid
         ]);
-
-        $this->assertFalse($job->isStored());
-        $job->save();
-        $this->assertTrue($job->isStored());
-
-        $id = $job->getId();
-        $loadedJob = \Cronario\Facade::getProducer()->getStorage()->find($id);;
-        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
-
+        $resultParentId = Helpers::callMethod($job, 'getParentId', []);
+        $this->assertEquals($pid, $resultParentId);
     }
 
-//
-//    public function testSaveJobMongo()
+//    public function testSaveJob()
 //    {
-//
-//        $appId = 'app-mongo-storage';
-//
-//        \Cronario\Facade::addProducer(new \Cronario\Producer([
-//            \Cronario\Producer::P_APP_ID  => $appId,
-//            \Cronario\Producer::P_STORAGE => new \Cronario\Storage\Mongo([
-//                [
-//                    'server'     => \Cronario\Storage\Mongo::CONFIG_SERVER_DEFAULT,
-//                    'database'   => 'cronario',
-//                    'collection' => 'jobs',
-//                ]
-//            ]),
-//        ]));
-//
 //        $job = new Job([
 //            Job::P_COMMENT => 'comment-xxx',
 //            Job::P_AUTHOR  => 'author-xxx',
-//            Job::P_APP_ID  => $appId,
 //        ]);
 //
 //        $this->assertFalse($job->isStored());
@@ -495,10 +505,43 @@ class JobTest extends \PHPUnit_Framework_TestCase
 //        $this->assertTrue($job->isStored());
 //
 //        $id = $job->getId();
-//        $loadedJob = \Cronario\Facade::getProducer($appId)->getStorage()->find($id);;
+//        $loadedJob = \Cronario\Facade::getProducer()->getStorage()->find($id);;
 //        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
 //
 //    }
+//
+////
+////    public function testSaveJobMongo()
+////    {
+////
+////        $appId = 'app-mongo-storage';
+////
+////        \Cronario\Facade::addProducer(new \Cronario\Producer([
+////            \Cronario\Producer::P_APP_ID  => $appId,
+////            \Cronario\Producer::P_STORAGE => new \Cronario\Storage\Mongo([
+////                [
+////                    'server'     => \Cronario\Storage\Mongo::CONFIG_SERVER_DEFAULT,
+////                    'database'   => 'cronario',
+////                    'collection' => 'jobs',
+////                ]
+////            ]),
+////        ]));
+////
+////        $job = new Job([
+////            Job::P_COMMENT => 'comment-xxx',
+////            Job::P_AUTHOR  => 'author-xxx',
+////            Job::P_APP_ID  => $appId,
+////        ]);
+////
+////        $this->assertFalse($job->isStored());
+////        $job->save();
+////        $this->assertTrue($job->isStored());
+////
+////        $id = $job->getId();
+////        $loadedJob = \Cronario\Facade::getProducer($appId)->getStorage()->find($id);;
+////        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
+////
+////    }
 
 
 }

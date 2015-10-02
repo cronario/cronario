@@ -31,7 +31,7 @@ after_script:
 before_script:
   - if [ $TRAVIS_PHP_VERSION = '7.0' ]; then pecl install pthreads; else pecl install pthreads-2.0.10; fi
   # run daemon
-  - php tests/startDaemon.php > /dev/null &
+  # - php tests/startDaemon.php > /dev/null &
 
 cache:
   directories:

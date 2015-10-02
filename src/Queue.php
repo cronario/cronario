@@ -672,7 +672,7 @@ class Queue
     /**
      * @return $this
      */
-    protected function clean()
+    public function clean()
     {
         $this->getRedis()->del($this->getRedisQueueNamespace());
         $this->getRedis()->del($this->getRedisJobNamespace());
