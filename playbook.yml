@@ -37,6 +37,7 @@
     - php5-sqlite
     - php5-dev
     - php5-xdebug
+    - php5-curl
 
   - name: Run mysql-server
     service: name=mysql state=running
