@@ -17,6 +17,22 @@ class WorkerTest extends \PHPUnit_Framework_TestCase
 
     }
 
+    public function testSetWorkerConfigDefault()
+    {
+        \Cronario\Test\Worker::setConfigDefault([
+            'superCustomKey' => 'xxx-yyy'
+        ]);
+
+        $testWorker = AbstractWorker::factory('\Cronario\Test\Worker');
+        $fullConfig = $testWorker->getConfig();
+
+        print_r($fullConfig);
+
+        $this->assertInternalType('array', $fullConfig);
+        $this->assertArrayHasKey('superCustomKey', $fullConfig);
+        $this->assertEquals('xxx-yyy', $fullConfig['superCustomKey']);
+    }
+
     public function testFactoryExceptionClassNotExists()
     {
         $this->setExpectedException('\Cronario\Exception\WorkerException');

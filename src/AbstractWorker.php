@@ -129,6 +129,24 @@ abstract class AbstractWorker
             : self::$loadedConfigSet[$calledClass][$key];
     }
 
+    /**
+     * @param array $config
+     *
+     * @return bool
+     */
+    final public static function setConfigDefault(array $config = [])
+    {
+        $calledClass = get_called_class();
+
+        if(!isset(self::$loadedConfigSet[$calledClass])){
+            static::$config = $config;
+        } else {
+            self::$loadedConfigSet[$calledClass] = array_merge(self::$configDefault, $config);
+        }
+
+        return true;
+    }
+
     //endregion **************************************************
 
     //endregion JOB CALLBACKS **************************************************
