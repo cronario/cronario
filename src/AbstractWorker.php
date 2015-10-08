@@ -138,7 +138,7 @@ abstract class AbstractWorker
     {
         $calledClass = get_called_class();
 
-        if(!isset(self::$loadedConfigSet[$calledClass])){
+        if (!isset(self::$loadedConfigSet[$calledClass])) {
             static::$config = $config;
         } else {
             self::$loadedConfigSet[$calledClass] = array_merge(self::$configDefault, $config);
@@ -176,7 +176,7 @@ abstract class AbstractWorker
                 $job->getCallback($type)
             );
         }
-        
+
         if (!is_array($callbackJobs) || count($callbackJobs) === 0) {
             return $this;
         }
@@ -187,6 +187,18 @@ abstract class AbstractWorker
         }
 
         return $this;
+    }
+
+    //endregion **************************************************
+
+    //endregion HELPERS **************************************************
+
+    /**
+     * @return string
+     */
+    public static function getClassPath()
+    {
+        return '\\' . ltrim(get_called_class(), '\\');
     }
 
     //endregion **************************************************

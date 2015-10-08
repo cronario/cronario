@@ -17,26 +17,35 @@ abstract class AbstractJob implements \Serializable
     public function __construct($data = [])
     {
         $this->data = $data;
-        $this->_init();
+        $this->initialize();
     }
 
     /**
      * @throws JobException
      */
-    public function _init()
+    protected function initialize()
     {
         if ($this->isStored()) {
             $this->unserializeCallbacks();
             $this->unserializeResult();
         } else {
-            if(isset($this->data[self::P_CALLBACK])){
+            if (isset($this->data[self::P_CALLBACK])) {
                 $this->callbacks = $this->data[self::P_CALLBACK];
             }
             $this->addDefaultData();
             $this->serializeCallbacks();
         }
+
+        $this->init();
     }
 
+    /**
+     * Template Method
+     */
+    protected function init()
+    {
+
+    }
 
     // region SERIALIZE ******************************************************************
 
@@ -54,7 +63,7 @@ abstract class AbstractJob implements \Serializable
     public function unserialize($serialized)
     {
         $this->data = unserialize($serialized);
-        $this->_init();
+        $this->initialize();
     }
 
     // endregion  **************************************************************************
@@ -542,7 +551,7 @@ abstract class AbstractJob implements \Serializable
      *
      * @return AbstractJob
      */
-    protected function setAppId($appId)
+    public function setAppId($appId)
     {
         return $this->setData(self::P_APP_ID, $appId);
     }
@@ -1019,6 +1028,7 @@ abstract class AbstractJob implements \Serializable
                 $this->callbacks[$type][] = unserialize($job);
             }
         }
+
         return $this;
     }
 
