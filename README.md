@@ -8,11 +8,26 @@
 [![Quality Score][ico-code-quality]][link-code-quality]
 [![Total Downloads][ico-downloads]][link-downloads]
 
-**Cronario** -  do jobs like a boss
-- Management tasks (asinhronnoo and synchronous)
-- Tasks with exotic schedule
+**Cronario** -  do jobs like a boss (Multi Tasking in PHP)
+
+- Centralized management tasks
+- ACL
+- Scalability (on different nodes)
+- Coordination (between nodes and processes)
+- Control (memory, CPU, load)
+- Monitoring (GUI, CLI)
+- Chains tasks
+- task Templates
+- task Scheduler
+- Sync / async processing tasks
+- Balancing async processes (automatic, manual)
+
 
 ## Install
+- PHP 5.3+
+- PHP with ZTS (Zend Thread Safety)
+- Extension Pthreads (Threading API for PHP)
+- Redis
 
 Via Composer
 
@@ -21,66 +36,14 @@ $ composer require cronario/cronario
 ```
 
 ## Usage
-
-
-
-bootstrap.php
-```php
-// main file where presents all producers
-
-$producer = new Producer(); // by defaults appId = 'default'
-
-Facade::addProducer($producer);
-```
-
-
-simpleDaemon.php
-```php
-// this file you should execute from cli 
-// $ php /.../simpleDaemon.php
-
-include('bootstrap.php');
-
-$producer = Facade::getProducer();
-$producer->start();
-```
-
-
-applicationPage-1.php
-```php
-include('bootstrap.php');
-
-$job = new Job([
-    /* ... */
-]);
-
-$result = $job();
-
-/*
-    $result = [ ... ];
-*/
-
-```
-
-## Change log
-
-Please see [CHANGELOG](CHANGELOG.md) for more information what has changed recently.
+Look here:
+https://github.com/cronario/vanila-app
 
 ## Testing
 
 ``` bash
 $ composer test
 ```
-
-## Contributing
-
-Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
-
-
-## Credits
-
-- [Vlad Groznov][link-author]
-- [All Contributors][link-contributors]
 
 ## License
 
