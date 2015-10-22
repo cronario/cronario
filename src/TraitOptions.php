@@ -8,7 +8,7 @@ trait TraitOptions
     final private function setOptions(array $options = [])
     {
         if (empty($options)) {
-            return;
+            return $this;
         }
 
         foreach ($options as $key => $value) {
@@ -21,5 +21,6 @@ trait TraitOptions
             }
         }
 
+        return $this;
     }
 }

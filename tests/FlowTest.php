@@ -41,7 +41,7 @@ class FlowTest extends \PHPUnit_Framework_TestCase
             Job::P_COMMENT  => 'comment-xxx',
             Job::P_AUTHOR   => 'author-xxx',
             Job::P_IS_SYNC  => true,
-            Job::P_CALLBACK => [
+            Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
                         Job::P_APP_ID  => self::TEST_PRODUCER_FLOW_ID,
@@ -77,7 +77,7 @@ class FlowTest extends \PHPUnit_Framework_TestCase
             Job::P_COMMENT  => 'comment-xxx',
             Job::P_AUTHOR   => 'author-xxx',
             Job::P_IS_SYNC  => true,
-            Job::P_CALLBACK => [
+            Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
                         Job::P_APP_ID  => self::TEST_PRODUCER_FLOW_ID,

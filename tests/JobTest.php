@@ -106,7 +106,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $job = new Job([
             Job::P_COMMENT  => 'comment-xxx',
             Job::P_AUTHOR   => 'author-xxx',
-            Job::P_CALLBACK => [
+            Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
                         Job::P_COMMENT => 'comment-xxx / level 2',
