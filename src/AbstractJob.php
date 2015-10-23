@@ -321,7 +321,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function hasParam($key)
     {
-        return array_key_exists($key, (array) $this->data[self::P_PARAMS]);
+        return $this->hasData(self::P_PARAMS) && array_key_exists($key, (array) $this->data[self::P_PARAMS]);
     }
 
 
@@ -975,6 +975,20 @@ abstract class AbstractJob implements \Serializable
     }
 
     /**
+     * @param $type
+     *
+     * @return array
+     */
+    public function getCallbacksByType($type)
+    {
+        if (array_key_exists($type, $this->callbacks) && count($this->callbacks[$type]) > 0) {
+            return $this->callbacks[$type];
+        }
+
+        return [];
+    }
+
+    /**
      * @param array $callbacks
      *
      * @return $this
@@ -996,7 +1010,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function getCallbacksSuccess()
     {
-        return $this->callbacks[self::P_CALLBACK_T_SUCCESS];
+        return $this->getCallbacksByType(self::P_CALLBACK_T_SUCCESS);
     }
 
     /**
@@ -1015,7 +1029,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function getCallbacksFailure()
     {
-        return $this->callbacks[self::P_CALLBACK_T_FAILURE];
+        return $this->getCallbacksByType(self::P_CALLBACK_T_FAILURE);
     }
 
     /**
@@ -1034,7 +1048,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function getCallbacksDone()
     {
-        return $this->callbacks[self::P_CALLBACK_T_DONE];
+        return $this->getCallbacksByType(self::P_CALLBACK_T_DONE);
     }
 
     /**
@@ -1053,7 +1067,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function getCallbacksError()
     {
-        return $this->callbacks[self::P_CALLBACK_T_ERROR];
+        return $this->getCallbacksByType(self::P_CALLBACK_T_ERROR);
     }
 
     /**
