@@ -103,31 +103,69 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     public function testJobDataCallbackCreate()
     {
+
+        $callbackJob = new Job([
+            Job::P_COMMENT => 'comment-xxx / level 2',
+        ]);
+
         $job = new Job([
-            Job::P_COMMENT  => 'comment-xxx',
-            Job::P_AUTHOR   => 'author-xxx',
+            Job::P_COMMENT   => 'comment-xxx',
+            Job::P_AUTHOR    => 'author-xxx',
             Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
-                    new Job([
-                        Job::P_COMMENT => 'comment-xxx / level 2',
-                    ]),
-                ]
+                    $callbackJob,
+                ],
+                Job::P_CALLBACK_T_FAILURE => [
+                    $callbackJob,
+                    $callbackJob,
+                ],
+                Job::P_CALLBACK_T_ERROR   => [
+                    $callbackJob,
+                    $callbackJob,
+                    $callbackJob,
+                ],
+                Job::P_CALLBACK_T_DONE    => [
+                    $callbackJob,
+                    $callbackJob,
+                    $callbackJob,
+                    $callbackJob
+                ],
             ]
         ]);
 
-        $callbacksAll = $job->getCallback();
+        $callbacksAll = $job->getCallbacks();
         $this->assertArrayHasKey(Job::P_CALLBACK_T_SUCCESS, $callbacksAll);
+        $this->assertArrayHasKey(Job::P_CALLBACK_T_FAILURE, $callbacksAll);
+        $this->assertArrayHasKey(Job::P_CALLBACK_T_ERROR, $callbacksAll);
+        $this->assertArrayHasKey(Job::P_CALLBACK_T_DONE, $callbacksAll);
 
 
-        $callbacksSuccess = $job->getCallback(Job::P_CALLBACK_T_SUCCESS);
-        $this->assertInternalType('array', $callbacksSuccess);
+        $callbacksSuccess = $job->getCallbacksSuccess();
+        $callbacksFailure = $job->getCallbacksFailure();
+        $callbacksError = $job->getCallbacksError();
+        $callbacksDone = $job->getCallbacksDone();
+
         $this->assertEquals(1, count($callbacksSuccess));
+        $this->assertEquals(2, count($callbacksFailure));
+        $this->assertEquals(3, count($callbacksError));
+        $this->assertEquals(4, count($callbacksDone));
 
         /** @var Job $callbackSingleJob */
         $callbackSingleJob = $callbacksSuccess[0];
         $this->assertInstanceOf('\\Cronario\\AbstractJob', $callbackSingleJob);
         $this->assertEquals('comment-xxx / level 2', $callbackSingleJob->getComment());
     }
+
+
+    public function testJobDataCallbackException()
+    {
+        $job = new Job();
+
+        $this->setExpectedException('\\Cronario\\Exception\\JobException');
+
+        $job->setCallbackSuccess(123);
+    }
+
 
     public function testSerializationJob()
     {
@@ -245,7 +283,7 @@ class JobTest extends \PHPUnit_Framework_TestCase
             Job::P_IS_SYNC => false,
         ]);
 
-        $job->setParam([
+        $job->setParams([
             Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_FAILURE,
             Job::P_PARAM_SLEEP           => 9,
         ]);
@@ -413,7 +451,35 @@ class JobTest extends \PHPUnit_Framework_TestCase
 
     }
 
+    public function testResultDifrentWaysSetts()
+    {
 
+        \Result\ResultException::setClassIndexMap([
+            'Cronario\\Exception\\ResultException' => 1,
+            'Cronario\\Test\\ResultException'      => 2,
+        ]);
+
+        $job1 = new Job();
+        $result = new \Cronario\Test\ResultException(\Cronario\Test\ResultException::FAILURE_XXX);
+        $job1->setResult($result);
+        $this->assertEquals(2201, $job1->getResult()->getGlobalCode());
+
+        $job2 = new Job();
+        $job2->setResult(2201);
+        $this->assertEquals(2201, $job2->getResult()->getGlobalCode());
+
+        $job3 = new Job();
+        $job3->setResult([
+            Job::RESULT_P_GLOBAL_CODE => 2201,
+            Job::RESULT_P_DATA        => null,
+        ]);
+        $this->assertEquals(2201, $job3->getResult()->getGlobalCode());
+
+        $job4 = new Job();
+        $job4->setResult(null);
+        $this->assertNull($job4->getResult());
+
+    }
 
     public function testJobResult()
     {
@@ -458,23 +524,17 @@ class JobTest extends \PHPUnit_Framework_TestCase
     public function testJobDebug()
     {
         $job = new Job([
-            Job::P_IS_SYNC    => true,
-            Job::P_DEBUG_DATA => [
-                'item1' => 'value1',
-                'item2' => 'value2',
-            ]
+            Job::P_IS_SYNC => true,
+            Job::P_DEBUG   => true,
         ]);
 
-        $job->setDebug(false);
-        $job->addDebugData('item3', 'value3');
-        $this->assertFalse($job->isDebug());
 
-        $job->setDebug(true);
-        $job->addDebugData('item3', 'value3');
         $this->assertTrue($job->isDebug());
 
+        $job->addDebug(['item3' => 'value3']);
+        $job->addDebug(['item3' => 'value3']);
 
-        $this->assertEquals(3, count($job->getDebugData()));
+        $this->assertEquals(2, count($job->getDebug()));
     }
 
     public function testJobParentId()
@@ -493,6 +553,92 @@ class JobTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($pid, $resultParentId);
     }
 
+
+    public function testDifferentWaysToCreateJob()
+    {
+
+        $callbackOne = new Job([
+            Job::P_COMMENT => 'callback job one'
+        ]);
+        $callbackTwo = new Job([
+            Job::P_COMMENT => 'callback job tho'
+        ]);
+        $callbackThree = new Job([
+            Job::P_COMMENT => 'callback job three'
+        ]);
+        $callbackThree = serialize($callbackThree);
+
+        // all data in constructor
+        $jobOne = new Job([
+            Job::P_PARAMS    => [
+                Job::P_PARAM_SLEEP => 1,
+            ],
+            Job::P_COMMENT   => 'comment ...',
+            Job::P_AUTHOR    => 'author ...',
+            Job::P_IS_SYNC   => true,
+            Job::P_CALLBACKS => [
+                Job::P_CALLBACK_T_SUCCESS => [
+                    $callbackOne,
+                    $callbackTwo
+                ],
+                Job::P_CALLBACK_T_FAILURE => [
+                    $callbackThree
+                ],
+                Job::P_CALLBACK_T_ERROR   => [
+                    $callbackThree
+                ],
+                Job::P_CALLBACK_T_DONE    => [
+                    $callbackThree
+                ],
+            ]
+        ]);
+
+        // only setters
+        $jobTwo = new Job();
+        $jobTwo->setSleep(1);
+        $jobTwo->setComment('comment ...');
+        $jobTwo->setAuthor('author ...');
+        $jobTwo->setSync(true);
+        $jobTwo->setCallbackSuccess($callbackOne);
+        $jobTwo->setCallbackSuccess($callbackTwo);
+        $jobTwo->setCallbackFailure($callbackThree);
+        $jobTwo->setCallbackError($callbackThree);
+        $jobTwo->setCallbackDone($callbackThree);
+
+
+        // mix constructor + setters
+        $jobThree = new Job([
+            Job::P_PARAMS    => [
+                Job::P_PARAM_SLEEP => 1,
+            ],
+            Job::P_COMMENT   => 'comment ...',
+            Job::P_CALLBACKS => [
+                Job::P_CALLBACK_T_SUCCESS => [
+                    $callbackOne,
+                    $callbackTwo
+                ],
+            ]
+        ]);
+        $jobThree->setAuthor('author ...');
+        $jobThree->setSync(true);
+        $jobThree->setCallbackFailure($callbackThree);
+        $jobThree->setCallbackError($callbackThree);
+        $jobThree->setCallbackDone($callbackThree);
+
+
+        $dataOne = $jobOne->getData();
+        $dataTwo = $jobTwo->getData();
+        $dataThree = $jobThree->getData();
+        ksort($dataOne);
+        ksort($dataTwo);
+        ksort($dataThree);
+
+        $this->assertEquals(json_encode($dataOne), json_encode($dataTwo));
+        $this->assertEquals(json_encode($dataTwo), json_encode($dataThree));
+    }
+
+
+
 //    public function testSaveJob()
 //    {
 //        $job = new Job([
@@ -510,38 +656,6 @@ class JobTest extends \PHPUnit_Framework_TestCase
 //
 //    }
 //
-////
-////    public function testSaveJobMongo()
-////    {
-////
-////        $appId = 'app-mongo-storage';
-////
-////        \Cronario\Facade::addProducer(new \Cronario\Producer([
-////            \Cronario\Producer::P_APP_ID  => $appId,
-////            \Cronario\Producer::P_STORAGE => new \Cronario\Storage\Mongo([
-////                [
-////                    'server'     => \Cronario\Storage\Mongo::CONFIG_SERVER_DEFAULT,
-////                    'database'   => 'cronario',
-////                    'collection' => 'jobs',
-////                ]
-////            ]),
-////        ]));
-////
-////        $job = new Job([
-////            Job::P_COMMENT => 'comment-xxx',
-////            Job::P_AUTHOR  => 'author-xxx',
-////            Job::P_APP_ID  => $appId,
-////        ]);
-////
-////        $this->assertFalse($job->isStored());
-////        $job->save();
-////        $this->assertTrue($job->isStored());
-////
-////        $id = $job->getId();
-////        $loadedJob = \Cronario\Facade::getProducer($appId)->getStorage()->find($id);;
-////        $this->assertInstanceOf('\\Cronario\\AbstractJob', $loadedJob);
-////
-////    }
 
 
 }

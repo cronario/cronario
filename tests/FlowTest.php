@@ -33,14 +33,14 @@ class FlowTest extends \PHPUnit_Framework_TestCase
     public function testDoSimpleJob()
     {
         $job = new Job([
-            Job::P_APP_ID   => self::TEST_PRODUCER_FLOW_ID,
-            Job::P_PARAMS   => [
+            Job::P_APP_ID    => self::TEST_PRODUCER_FLOW_ID,
+            Job::P_PARAMS    => [
                 Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS,
                 Job::P_PARAM_SLEEP           => 0,
             ],
-            Job::P_COMMENT  => 'comment-xxx',
-            Job::P_AUTHOR   => 'author-xxx',
-            Job::P_IS_SYNC  => true,
+            Job::P_COMMENT   => 'comment-xxx',
+            Job::P_AUTHOR    => 'author-xxx',
+            Job::P_IS_SYNC   => true,
             Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
@@ -69,14 +69,14 @@ class FlowTest extends \PHPUnit_Framework_TestCase
     public function testDoCallbackJob()
     {
         $job = new Job([
-            Job::P_APP_ID   => self::TEST_PRODUCER_FLOW_ID,
-            Job::P_PARAMS   => [
+            Job::P_APP_ID    => self::TEST_PRODUCER_FLOW_ID,
+            Job::P_PARAMS    => [
                 Job::P_PARAM_EXPECTED_RESULT => Job::P_PARAM_EXPECTED_RESULT_T_SUCCESS,
                 Job::P_PARAM_SLEEP           => 0,
             ],
-            Job::P_COMMENT  => 'comment-xxx',
-            Job::P_AUTHOR   => 'author-xxx',
-            Job::P_IS_SYNC  => true,
+            Job::P_COMMENT   => 'comment-xxx',
+            Job::P_AUTHOR    => 'author-xxx',
+            Job::P_IS_SYNC   => true,
             Job::P_CALLBACKS => [
                 Job::P_CALLBACK_T_SUCCESS => [
                     new Job([
@@ -105,9 +105,10 @@ class FlowTest extends \PHPUnit_Framework_TestCase
     }
 
 
-    public function testManagerCreate(){
-
-        $manager = new \Cronario\Manager(999 , self::TEST_PRODUCER_FLOW_ID , '\\Cronario\\Test\\Worker','/var/www/tests/daemon.php');
+    public function testManagerCreate()
+    {
+        $manager = new \Cronario\Manager(999, self::TEST_PRODUCER_FLOW_ID, '\\Cronario\\Test\\Worker',
+            '/var/www/tests/daemon.php');
 
         $this->assertInstanceOf('\\Thread', $manager);
         $this->assertInstanceOf('\\Cronario\\Manager', $manager);
@@ -121,10 +122,6 @@ class FlowTest extends \PHPUnit_Framework_TestCase
         // start daemon in background
         shell_exec('php /var/www/tests/daemon.php start > /dev/null &');
         sleep(1);
-
-
-
-
 
         // kill daemon in background
         shell_exec('php /var/www/tests/daemon.php kill > /dev/null &');

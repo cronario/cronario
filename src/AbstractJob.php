@@ -48,7 +48,8 @@ abstract class AbstractJob implements \Serializable
      */
     public function unserialize($serialized)
     {
-        $this->data = unserialize($serialized);
+        $options = unserialize($serialized);
+        $this->setOptions($options);
     }
 
     // endregion  **************************************************************************
@@ -372,6 +373,10 @@ abstract class AbstractJob implements \Serializable
      */
     public function setResult($result, $data = null)
     {
+        if (null === $result) {
+            return $this;
+        }
+
         if (is_numeric($result)) {
             if ($result > 1000) {
                 $result = ResultException::factory($result, $data);
@@ -380,7 +385,7 @@ abstract class AbstractJob implements \Serializable
             }
         } elseif ($result instanceof ResultException) {
             // continue
-        } elseif (is_array($result)) {
+        } elseif (is_array($result) && isset($result[self::RESULT_P_GLOBAL_CODE])) {
             $result = ResultException::factory($result[self::RESULT_P_GLOBAL_CODE], $result[self::RESULT_P_DATA]);
         } else {
             $result = new ResultException(ResultException::E_INTERNAL, $result);
@@ -407,7 +412,7 @@ abstract class AbstractJob implements \Serializable
     const P_JOB_CLASS = 'jobClass';
     const P_WORKER_CLASS = 'workerClass';
 
-    const P_IS_SYNC = 'isSync';
+    const P_IS_SYNC = 'sync';
     const P_APP_ID = 'appId';
     const P_PARENT_ID = 'parentId';
     const P_AUTHOR = 'author';
@@ -483,7 +488,7 @@ abstract class AbstractJob implements \Serializable
     /**
      * @var null|string
      */
-    protected $defaultWorkerClass = null;
+    protected $workerClass = null;
 
     /**
      * @return string
@@ -491,8 +496,8 @@ abstract class AbstractJob implements \Serializable
     public function getWorkerClass()
     {
         $class = $this->getData(self::P_WORKER_CLASS,
-            (null !== $this->defaultWorkerClass)
-                ? $this->defaultWorkerClass
+            (null !== $this->workerClass)
+                ? $this->workerClass
                 : str_replace('\Job', '\Worker', get_class($this))
         );
 

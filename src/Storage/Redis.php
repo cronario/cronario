@@ -45,9 +45,6 @@ class Redis implements StorageInterface
             $job->setId(uniqid());
         }
 
-        // use short keys / or just save data like it was
-        $data = $this->minimizeKeys($data, $this->minimizeMap);
-
         $this->redis->set($this->namespace . $job->getId(), json_encode($data));
 
         return true;
@@ -63,9 +60,6 @@ class Redis implements StorageInterface
         $data = $this->redis->get($this->namespace . $jobId);
         $data = json_decode($data, true);
 
-        // use short keys / or just load data like it was
-        $data = $this->maximizeKeys($data, $this->minimizeMap);
-
         $jobClass = $data[AbstractJob::P_JOB_CLASS];
 
         /** @var AbstractJob $job */
@@ -73,84 +67,5 @@ class Redis implements StorageInterface
 
         return $job;
     }
-
-    protected $minimizeMap
-        = [
-            AbstractJob::P_AUTHOR       => 'aut',
-            AbstractJob::P_DEBUG        => 'dbg',
-            AbstractJob::P_COMMENT      => 'com',
-            AbstractJob::P_JOB_CLASS    => 'jbc',
-            AbstractJob::P_WORKER_CLASS => 'wrc',
-            AbstractJob::P_PARAMS       => 'prm',
-            AbstractJob::P_RESULT       => 'res',
-            'res'                       => [
-                AbstractJob::RESULT_P_GLOBAL_CODE => 'g',
-                AbstractJob::RESULT_P_DATA        => 'd',
-            ],
-            AbstractJob::P_CREATE_ON    => 'cro',
-            AbstractJob::P_START_ON     => 'sto',
-            AbstractJob::P_EXPIRED_ON   => 'exo',
-            AbstractJob::P_DELETE_ON    => 'dlo',
-            AbstractJob::P_FINISH_ON    => 'fno',
-            AbstractJob::P_PRIORITY     => 'pri',
-            AbstractJob::P_IS_SYNC      => 'snc',
-            AbstractJob::P_CALLBACKS    => 'clb',
-            'clb'                       => [
-                AbstractJob::P_CALLBACK_T_SUCCESS => 's',
-                AbstractJob::P_CALLBACK_T_FAILURE => 'f',
-                AbstractJob::P_CALLBACK_T_DONE    => 'd',
-                AbstractJob::P_CALLBACK_T_ERROR   => 'e',
-            ]
-        ];
-
-    /**
-     * @param      $data
-     * @param null $map
-     *
-     * @return mixed
-     */
-    public function maximizeKeys($data, $map = null)
-    {
-        if (null === $map) {
-            return $data;
-        }
-
-        $mapFlip = @array_flip($map);
-        foreach ($data as $key => $value) {
-            if (isset($mapFlip[$key])) {
-                unset($data[$key]);
-                $data[$mapFlip[$key]] = (is_array($value) && !isset($value[0]) && is_array($map[$key]))
-                    ? $this->maximizeKeys($map[$key], $value)
-                    : $value;
-            }
-        }
-
-        return $data;
-    }
-
-    /**
-     * @param      $data
-     * @param null $map
-     *
-     * @return mixed
-     */
-    public function minimizeKeys($data, $map = null)
-    {
-        if (null === $map) {
-            return $data;
-        }
-
-        foreach ($data as $key => $value) {
-            if (isset($map[$key])) {
-                unset($data[$key]);
-                $data[$map[$key]] = (is_array($value) && !isset($value[0]) && is_array($map[$map[$key]]))
-                    ? $this->minimizeKeys($map[$map[$key]], $value)
-                    : $value;
-            }
-        }
-
-        return $data;
-    }
-
 
 }

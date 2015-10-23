@@ -165,16 +165,15 @@ abstract class AbstractWorker
         }
 
         if ($result->isError()) {
-            $callbackJobs = $job->getCallback(AbstractJob::P_CALLBACK_T_ERROR);
+            $callbackJobs = $job->getCallbacksError();
         } else {
-            $type = ($result->isSuccess())
-                ? AbstractJob::P_CALLBACK_T_SUCCESS
-                : AbstractJob::P_CALLBACK_T_FAILURE;
 
-            $callbackJobs = array_merge(
-                $job->getCallback(AbstractJob::P_CALLBACK_T_ERROR),
-                $job->getCallback($type)
-            );
+            $callbackJobs = $job->getCallbacksDone();
+            if($result->isSuccess()){
+                $callbackJobs = $callbackJobs + $job->getCallbacksSuccess();
+            } else {
+                $callbackJobs = $callbackJobs + $job->getCallbacksError();
+            }
         }
 
         if (!is_array($callbackJobs) || count($callbackJobs) === 0) {
