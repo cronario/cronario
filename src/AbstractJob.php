@@ -50,6 +50,7 @@ abstract class AbstractJob implements \Serializable
     {
         $options = unserialize($serialized);
         $this->setOptions($options);
+        $this->init();
     }
 
     // endregion  **************************************************************************
