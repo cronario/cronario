@@ -422,9 +422,7 @@ class Manager extends \Thread
 
                     } elseif ($result->isRetry()) {
 
-                        $this->eventTrigger(self::EVENT_RETRY);
                         $logger->trace("Manager {$managerId} Job ResultException isRetry {$jobId}");
-
                         $job->addAttempts();
                         $job->save(); // important this will saved result to job !!!
 
@@ -436,12 +434,14 @@ class Manager extends \Thread
                         $queue->deleteJob($jobId);
 
                         if ($job->hasAttempt()) {
-                            $logger->trace("job {$jobId} has {$attemptCount} (max:{$job->getAttemptsMax()}) and will be delayed {$attemptDelay}");
+                            $logger->trace("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()}) and will be delayed {$attemptDelay}");
                             $queue->putJob($gatewayClass, $jobId, $attemptDelay);
+                            $this->eventTrigger(self::EVENT_RETRY);
                         } else {
-                            $logger->trace("job {$jobId} has {$attemptCount} and will have bad response");
+                            $logger->trace("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()})  and will have bad result");
                             $job->setResult(new ResultException(ResultException::FAILURE_MAX_ATTEMPTS));
                             $job->save();
+                            $this->eventTrigger(self::EVENT_FAIL);
                         }
 
                     } elseif ($result->isRedirect()) {
