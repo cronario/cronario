@@ -501,7 +501,7 @@ class Manager extends \Thread
         /** @var AbstractWorker $class */
         if (null === static::$workerConfig) {
             $class = $this->workerClass;
-            static::$workerConfig = $class::getConfig($key);
+            static::$workerConfig = $class::getConfig();
         }
 
         return (null === $key)
