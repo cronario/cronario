@@ -21,10 +21,7 @@ Facade::addProducer(
             Producer::CONFIG_SLEEP_FINISH_MANAGER_LOOP => 1,
             Producer::CONFIG_BOOTSTRAP_FILE            => __FILE__,
         ],
-        Producer::P_LOGGER => new LoggerJournal([
-            LoggerJournal::P_CONSOLE_LEVEL => LoggerJournal::LEVEL_DEBUG,
-            LoggerJournal::P_JOURNAL_LEVEL => LoggerJournal::LEVEL_DEBUG,
-        ]),
+        Producer::P_LOGGER => new LoggerJournal(),
         Producer::P_QUEUE  => new Queue(),
         Producer::P_REDIS  => new \Predis\Client()
     ])

@@ -194,12 +194,12 @@ class Manager extends \Thread
     }
 
     /**
-     * @var Logger\LoggerInterface
+     * @var \Psr\Log\LoggerInterface
      */
     protected static $logger;
 
     /**
-     * @return Logger\LoggerInterface
+     * @return \Psr\Log\LoggerInterface
      */
     protected function getLogger()
     {
@@ -346,7 +346,7 @@ class Manager extends \Thread
         $managerId = $this->getId();
         $logger = $this->getLogger();
         $queue = $this->getQueue();
-        $logger->trace("Manager {$managerId} start work {$workerClass}");
+        $logger->info("Manager {$managerId} start work {$workerClass}", [__NAMESPACE__]);
 
 
         try {
@@ -354,9 +354,9 @@ class Manager extends \Thread
         } catch (Exception\WorkerException $ex) {
 
             $queue->stop($workerClass);
-            $logger->exception($ex);
-            $logger->info("Manager {$managerId} Queue stop {$workerClass}");
-            $logger->info("Manager {$managerId} finish work {$workerClass}");
+            $logger->warning($ex->getMessage(), [__NAMESPACE__]);
+            $logger->info("Manager {$managerId} Queue stop {$workerClass}", [__NAMESPACE__]);
+            $logger->info("Manager {$managerId} finish work {$workerClass}", [__NAMESPACE__]);
 
             return false;
         }
@@ -369,60 +369,62 @@ class Manager extends \Thread
             while ($jobId = $queue->reserveJob($workerClass, $waitForJob)) {
 
                 if ($jobId === false) {
-                    $logger->trace("Manager {$managerId} queue is empty so {$workerClass}");
+                    $logger->debug("Manager {$managerId} queue is empty so {$workerClass}", [__NAMESPACE__]);
                     break;
                 }
 
-                $logger->trace("Manager {$managerId} reserve job {$jobId}");
+                $logger->debug("Manager {$managerId} reserve job {$jobId}", [__NAMESPACE__]);
 
                 $job = null;
                 try {
                     /** @var AbstractJob $job */
                     $job = Facade::getStorage($this->getAppId())->find($jobId);
                 } catch (JobException $ex) {
-                    $logger->exception($ex);
+                    $logger->warning($ex->getMessage(), [__NAMESPACE__]);
                     $queue->deleteJob($jobId);
                     continue;
                 }
 
                 if ($job === null) {
-                    $logger->error("Manager {$managerId} job is not instanceof of AbstractJob {$jobId}");
+                    $logger->error("Manager {$managerId} job is not instanceof of AbstractJob {$jobId}",
+                        [__NAMESPACE__]);
                     $queue->deleteJob($jobId);
                     continue;
                 }
 
-                $logger->trace("Manager {$managerId} Worker start working at {$jobId}...");
+                $logger->debug("Manager {$managerId} Worker start working at {$jobId}...", [__NAMESPACE__]);
 
                 // DO JOB!
 
                 /** @var ResultException $result */
                 $result = $worker($job);
 
-                $logger->trace("Manager {$managerId}  Worker finish working at {$jobId} : {$result->getGlobalCode()}");
+                $logger->debug("Manager {$managerId}  Worker finish working at {$jobId} : {$result->getGlobalCode()}",
+                    [__NAMESPACE__]);
 
                 if ($result instanceof ResultException) {
 
                     if ($result->isSuccess()) {
 
                         $queue->deleteJob($jobId);
-                        $logger->trace("Manager {$managerId} Job ResultException isSuccess {$jobId}");
+                        $logger->debug("Manager {$managerId} Job ResultException isSuccess {$jobId}", [__NAMESPACE__]);
                         $this->eventTrigger(self::EVENT_SUCCESS);
 
                     } elseif ($result->isFailure()) {
 
                         $queue->deleteJob($jobId);
-                        $logger->trace("Manager {$managerId} Job ResultException isFail {$jobId}");
+                        $logger->debug("Manager {$managerId} Job ResultException isFail {$jobId}", [__NAMESPACE__]);
                         $this->eventTrigger(self::EVENT_FAIL);
 
                     } elseif ($result->isError()) {
 
                         $queue->buryJob($jobId);
-                        $logger->trace("Manager {$managerId} Job ResultException isError {$jobId}");
+                        $logger->debug("Manager {$managerId} Job ResultException isError {$jobId}", [__NAMESPACE__]);
                         $this->eventTrigger(self::EVENT_ERROR);
 
                     } elseif ($result->isRetry()) {
 
-                        $logger->trace("Manager {$managerId} Job ResultException isRetry {$jobId}");
+                        $logger->debug("Manager {$managerId} Job ResultException isRetry {$jobId}", [__NAMESPACE__]);
                         $job->addAttempts();
                         $job->save(); // important this will saved result to job !!!
 
@@ -434,11 +436,15 @@ class Manager extends \Thread
                         $queue->deleteJob($jobId);
 
                         if ($job->hasAttempt()) {
-                            $logger->trace("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()}) and will be delayed {$attemptDelay}");
+                            $logger->debug("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()}) and will be delayed {$attemptDelay}",
+                                [__NAMESPACE__]);
+
                             $queue->putJob($gatewayClass, $jobId, $attemptDelay);
                             $this->eventTrigger(self::EVENT_RETRY);
                         } else {
-                            $logger->trace("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()})  and will have bad result");
+                            $logger->debug("job {$jobId} has {$attemptCount} attempts (max:{$job->getAttemptsMax()})  and will have bad result",
+                                [__NAMESPACE__]);
+
                             $job->setResult(new ResultException(ResultException::FAILURE_MAX_ATTEMPTS));
                             $job->save();
                             $this->eventTrigger(self::EVENT_FAIL);
@@ -449,15 +455,17 @@ class Manager extends \Thread
                         $queue->deleteJob($jobId);
                         $queue->putJob($job->getWorkerClass(), $jobId);
 
-                        $logger->trace("Job ResultException isRedirect {$jobId} to {$job->getWorkerClass()}");
+                        $logger->debug("Job ResultException isRedirect {$jobId} to {$job->getWorkerClass()}",
+                            [__NAMESPACE__]);
+
                         $this->eventTrigger(self::EVENT_REDIRECT);
 
                     } else {
                         $queue->deleteJob($jobId);
-                        $logger->error("Undefined result job id : {$jobId}");
+                        $logger->error("Undefined result job id : {$jobId}", [__NAMESPACE__]);
                     }
                 } else {
-                    $logger->error('job result is not type of AbstractResultException');
+                    $logger->error('job result is not type of AbstractResultException', [__NAMESPACE__]);
                 }
 
 
@@ -465,7 +473,8 @@ class Manager extends \Thread
                     $newJob = clone $job;
                     $newJob();
 
-                    $logger->trace("Manager {$managerId} catch daemon  shutdown, finish listening queue");
+                    $logger->debug("Manager {$managerId} catch daemon  shutdown, finish listening queue",
+                        [__NAMESPACE__]);
                 }
 
                 if ($this->isLimitsExceeded() || $this->isProducerShutDown()) {
@@ -476,10 +485,10 @@ class Manager extends \Thread
 
             }
         } catch (\Exception $ex) {
-            $logger->exception($ex);
+            $logger->warning($ex->getMessage());
         }
 
-        $logger->trace("Manager {$managerId} finish work {$workerClass}");
+        $logger->info("Manager {$managerId} finish work {$workerClass}", [__NAMESPACE__]);
         $this->finishManagerLive();
 
         return true;
@@ -520,7 +529,7 @@ class Manager extends \Thread
         if ($sleep > 0) {
             $logger = $this->getLogger();
             $managerId = $this->getId();
-            $logger->trace("Manager {$managerId} job-done-after-sleep : {$sleep} ...");
+            $logger->debug("Manager {$managerId} job-done-after-sleep : {$sleep} ...", [__NAMESPACE__]);
             sleep($sleep);
         }
     }
@@ -534,7 +543,7 @@ class Manager extends \Thread
             $logger = $this->getLogger();
             $managerId = $this->getId();
 
-            $logger->trace("Manager {$managerId} catch daemon  shutdown, finish listening queue");
+            $logger->info("Manager {$managerId} catch daemon  shutdown, finish listening queue", [__NAMESPACE__]);
 
             return true;
         }
@@ -559,49 +568,55 @@ class Manager extends \Thread
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_DONE_LIMIT];
         if ($lim > 0 && $lim === $jobsDoneCount) {
-            $logger->trace("Manager {$managerId} done limit is equal {$jobsDoneCount}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} done limit is equal {$jobsDoneCount}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_SUCCESS_LIMIT];
         if ($lim > 0 && $lim === $events[self::EVENT_SUCCESS]) {
-            $logger->trace("Manager {$managerId} success limit is equal {$events['isSuccess']}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} success limit is equal {$events['isSuccess']}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_FAIL_LIMIT];
         if ($lim > 0 && $lim === $events[self::EVENT_FAIL]) {
-            $logger->trace("Manager {$managerId} fail limit is equal {$events['isFail']}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} fail limit is equal {$events['isFail']}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_RETRY_LIMIT];
         if ($lim > 0 && $lim === $events[self::EVENT_RETRY]) {
-            $logger->trace("Manager {$managerId} retry limit is equal {$events['isRetry']}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} retry limit is equal {$events['isRetry']}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_ERROR_LIMIT];
         if ($lim > 0 && $lim === $events[self::EVENT_ERROR]) {
-            $logger->trace("Manager {$managerId} error limit is equal {$events['isError']}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} error limit is equal {$events['isError']}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_JOBS_REDIRECT_LIMIT];
         if ($lim > 0 && $lim === $events[self::EVENT_REDIRECT]) {
-            $logger->trace("Manager {$managerId} redirect limit is equal {$events['isRedirect']}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} redirect limit is equal {$events['isRedirect']}, so finish this manager ...",
+                [__NAMESPACE__]);
 
             return true;
         }
 
         $lim = $wc[AbstractWorker::CONFIG_P_MANAGER_LIFETIME];
         if ($lim > 0 && $this->getStartOn() + $lim <= time()) {
-            $logger->trace("Manager {$managerId} lifetime limit {$lim}, so finish this manager ...");
+            $logger->debug("Manager {$managerId} lifetime limit {$lim}, so finish this manager ...", [__NAMESPACE__]);
 
             return true;
         }

@@ -2,87 +2,68 @@
 
 namespace Cronario\Logger;
 
-use Cronario\TraitOptions;
-
-class Journal implements LoggerInterface
+class Journal implements \Psr\Log\LoggerInterface
 {
-    use TraitOptions;
+    use \Psr\Log\LoggerTrait;
 
-    public function __construct($options = [])
-    {
-        $this->setOptions($options);
-    }
-
-    const P_CONSOLE_LEVEL = "consoleLevel";
-    const P_JOURNAL_LEVEL = "journalLevel";
-    const P_JOURNAL_FOLDER = "journalFolder";
-
-    protected $consoleLevel = 0;
-    protected $journalLevel = 0;
     protected $journalFolder;
+    protected $journalRecord;
 
-    protected function setConsoleLevel($level)
+    /**
+     * @param string $folder
+     * @param array  $record
+     */
+    public function __construct($folder = __DIR__, array $record = ['emergency', 'alert', 'critical', 'error'])
     {
-        $this->consoleLevel = $level;
+        $this->journalFolder = rtrim($folder, '/') . '/';
+        $this->journalRecord = $record;
     }
 
-    protected function setJournalLevel($level)
-    {
-        $this->journalLevel = $level;
-    }
 
-    protected function setJournalFolder($folder)
+    /**
+     * @param mixed  $level
+     * @param string $message
+     * @param array  $context
+     *
+     * @return null
+     */
+    public function log($level, $message, array $context = array())
     {
-        if (!empty($folder)) {
-            $this->journalFolder = rtrim($folder, '/') . '/';
+
+        if (!in_array($level, $this->journalRecord)) {
+            return null;
         }
+
+        $line = sprintf("%s: %s %s %s",
+                $this->getCurrentDate(),
+                str_repeat('. ', $this->levelToPoints[$level]),
+                $message,
+                '[ ' . implode(' ; ', $context) . ' ]'
+            ) . PHP_EOL;
+
+        file_put_contents($this->getJournalPath(), $line, FILE_APPEND);
+
+        return null;
     }
 
+    /**
+     * @var array
+     */
+    protected $levelToPoints
+        = [
+            'emergency' => 0,
+            'alert'     => 1,
+            'critical'  => 2,
+            'error'     => 3,
+            'warning'   => 4,
+            'notice'    => 5,
+            'info'      => 6,
+            'debug'     => 7,
+        ];
 
-    public function log($level, $msg)
-    {
-        return $this->save($level, $msg);
-    }
-
-
-    public function debug($msg)
-    {
-        return $this->save(self::LEVEL_DEBUG, $msg);
-    }
-
-    public function trace($msg)
-    {
-        return $this->save(self::LEVEL_TRACE, $msg);
-    }
-
-    public function info($msg)
-    {
-        return $this->save(self::LEVEL_INFO, $msg);
-    }
-
-    public function attempt($msg)
-    {
-        return $this->save(self::LEVEL_ATTEMPT, $msg);
-    }
-
-    public function warning($msg)
-    {
-        return $this->save(self::LEVEL_WARNING, $msg);
-    }
-
-    public function error($msg)
-    {
-        return self::save(self::LEVEL_ERROR, $msg);
-    }
-
-    public function exception(\Exception $e)
-    {
-        $msg = "Exception in file {$e->getFile()} on line {$e->getLine()} with msg : {$e->getMessage()}";
-
-        return $this->save(self::LEVEL_EXCEPTION, $msg);
-    }
-
-
+    /**
+     * @return string
+     */
     protected function getCurrentDate()
     {
         $t = microtime(true);
@@ -93,37 +74,12 @@ class Journal implements LoggerInterface
         return $result;
     }
 
+    /**
+     * @return string
+     */
     protected function getJournalPath()
     {
-        if (null === $this->journalFolder) {
-            return null;
-        }
-
         return $this->journalFolder . date('Y-m-d') . '.log';
-    }
-
-    protected function save($level, $msg)
-    {
-        if (is_array($msg)) {
-            $msg = print_r($msg, true);
-        }
-
-        $points = str_repeat('. ', (int) $level);
-        $prefix = $this->getCurrentDate() . ' : ' . $points;
-
-        $line = $prefix . $msg . PHP_EOL;
-
-        $journalPath = $this->getJournalPath();
-
-        if ($this->journalLevel >= $level && null !== $journalPath) {
-            file_put_contents($journalPath, $line, FILE_APPEND);
-        }
-
-        if ($this->consoleLevel >= $level) {
-            echo $line;
-        }
-
-        return $this;
     }
 
 }

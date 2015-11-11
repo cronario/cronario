@@ -33,7 +33,7 @@ class ProducerTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(Producer::DEFAULT_APP_ID, $this->producer->getAppId());
         $this->assertInstanceOf('\\Predis\\Client', $this->producer->getRedis());
         $this->assertInstanceOf('\\Cronario\\Storage\\StorageInterface', $this->producer->getStorage());
-        $this->assertInstanceOf('\\Cronario\\Logger\\LoggerInterface', $this->producer->getLogger());
+        $this->assertInstanceOf('\\Psr\\Log\\LoggerInterface', $this->producer->getLogger());
         $this->assertInstanceOf('\\Cronario\\Queue', $this->producer->getQueue());
     }
 //

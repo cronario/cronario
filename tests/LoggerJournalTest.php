@@ -9,11 +9,7 @@ class LoggerJournalTest extends \PHPUnit_Framework_TestCase
 
     public function testCreating()
     {
-        $journal = new \Cronario\Logger\Journal([
-            \Cronario\Logger\Journal::P_CONSOLE_LEVEL  => 9,
-            \Cronario\Logger\Journal::P_JOURNAL_LEVEL  => 9,
-            \Cronario\Logger\Journal::P_JOURNAL_FOLDER => null,
-        ]);
+        $journal = new \Cronario\Logger\Journal();
 
         $this->assertInstanceOf('\\Cronario\\Logger\\Journal', $journal);
     }
@@ -22,29 +18,18 @@ class LoggerJournalTest extends \PHPUnit_Framework_TestCase
     public function testLogging()
     {
 
-        $journal = new \Cronario\Logger\Journal([
-            \Cronario\Logger\Journal::P_CONSOLE_LEVEL  => 9,
-            \Cronario\Logger\Journal::P_JOURNAL_LEVEL  => 9,
-            \Cronario\Logger\Journal::P_JOURNAL_FOLDER => '',
-        ]);
+        $journal = new \Cronario\Logger\Journal();
 
-        ob_start();
-        $journal->debug('-debug');
-        $journal->trace('-trace');
-        $journal->info('-info');
-        $journal->attempt('-attempt');
-        $journal->warning('-warning');
-        $journal->error('-error');
-        $journal->exception(new \Exception('-exception ...'));
-        $output = ob_get_flush();
+        $journal->debug('-debug' , [ __NAMESPACE__]);
+        $journal->info('-info',[ __NAMESPACE__]);
+        $journal->notice('-notice',[ __NAMESPACE__]);
+        $journal->warning('-warning',[ __NAMESPACE__]);
+        $journal->error('-error',[ __NAMESPACE__]);
+        $journal->critical('-critical',[ __NAMESPACE__]);
+        $journal->alert('-alert',[ __NAMESPACE__]);
+        $journal->emergency('-emergency',[ __NAMESPACE__]);
 
-        $this->assertContains('-debug' , $output);
-        $this->assertContains('-trace' , $output);
-        $this->assertContains('-info' , $output);
-        $this->assertContains('-attempt' , $output);
-        $this->assertContains('-error' , $output);
-        $this->assertContains('-warning' , $output);
-        $this->assertContains('-exception' , $output);
+        $this->assertInstanceOf('\\Psr\\Log\\LoggerInterface', $journal);
 
     }
 

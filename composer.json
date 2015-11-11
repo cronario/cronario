@@ -22,7 +22,8 @@
         "php" : ">=5.5.0",
         "cronario/result" : "0.2.*",
         "predis/predis": "1.0.1",
-        "mtdowling/cron-expression": "^1.0"
+        "mtdowling/cron-expression": "^1.0",
+        "psr/log": "^1.0.0"
     },
     "require-dev": {
         "phpunit/phpunit" : "4.*"

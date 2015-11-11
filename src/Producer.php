@@ -4,7 +4,6 @@ namespace Cronario;
 
 use Cronario\Exception\ProducerException;
 use Cronario\Exception\WorkerException;
-use Cronario\Logger\LoggerInterface;
 use Cronario\Storage\StorageInterface;
 use Predis\Client;
 
@@ -30,7 +29,7 @@ class Producer
             $this->queue->setProducer($this);
         }
 
-        if (!isset($options[self::P_LOGGER]) || !($options[self::P_LOGGER] instanceof LoggerInterface)) {
+        if (!isset($options[self::P_LOGGER]) || !($options[self::P_LOGGER] instanceof \Psr\Log\LoggerInterface)) {
             $this->logger = new Logger\Journal();
         }
 
@@ -59,6 +58,10 @@ class Producer
 
     protected $appId;
     protected $queue;
+
+    /**
+     * @var \Psr\Log\LoggerInterface
+     */
     protected $logger;
     protected $redis;
 
@@ -111,7 +114,7 @@ class Producer
 
 
     /**
-     * @return Logger\LoggerInterface
+     * @return \Psr\Log\LoggerInterface
      */
     public function getLogger()
     {
@@ -119,11 +122,11 @@ class Producer
     }
 
     /**
-     * @param LoggerInterface $logger
+     * @param \Psr\Log\LoggerInterface $logger
      *
      * @return $this
      */
-    protected function setLogger(LoggerInterface $logger)
+    protected function setLogger(\Psr\Log\LoggerInterface $logger)
     {
         $this->logger = $logger;
 
@@ -275,7 +278,7 @@ class Producer
     protected function cleanData()
     {
         $this->getRedis()->del($this->getRedisNamespace());
-        $this->getLogger()->trace("Daemon clean state");
+        $this->getLogger()->debug("Daemon clean state", [__NAMESPACE__]);
     }
 
 
@@ -297,7 +300,7 @@ class Producer
     protected function setProcessId($id)
     {
         $this->setData(self::P_PID, $id);
-        $this->getLogger()->trace("Daemon set process id  : {$id}");
+        $this->getLogger()->info("Daemon set process id  : {$id}", [__NAMESPACE__]);
     }
 
     // endregion ***************************************************************
@@ -340,7 +343,7 @@ class Producer
     protected function setState($state)
     {
         $this->setData(self::P_STATE, $state);
-        $this->getLogger()->trace("Daemon set state : {$state}");
+        $this->getLogger()->debug("Daemon set state : {$state}", [__NAMESPACE__]);
     }
 
     // endregion ***************************************************************
@@ -428,7 +431,7 @@ class Producer
 
             /** @var $manager \Thread */
             if (!$manager->isRunning()) {
-                $this->getLogger()->trace("Daemon clean old manager : {$managerKey}");
+                $this->getLogger()->debug("Daemon clean old manager : {$managerKey}", [__NAMESPACE__]);
                 unset($this->managerSet[$managerKey]);
             }
         }
@@ -499,11 +502,12 @@ class Producer
 
             } catch (WorkerException $ex) {
                 $this->managerIgnoreSet[] = $workerClass;
-                $this->getLogger()->exception($ex);
-                $this->getLogger()->warning("Daemon {$this->getAppId()} will ignore worker class {$workerClass}");
+                $this->getLogger()->warning($ex->getMessage(), [__NAMESPACE__]);
+                $this->getLogger()
+                    ->warning("Daemon {$this->getAppId()} will ignore worker class {$workerClass}", [__NAMESPACE__]);
                 continue;
             } catch (\Exception $ex) {
-                $this->getLogger()->exception($ex);
+                $this->getLogger()->warning($ex->getMessage(), [__NAMESPACE__]);
                 continue;
             }
 
@@ -524,7 +528,7 @@ class Producer
                     continue;
                 }
 
-                $this->getLogger()->trace("Daemon create manager : {$managerId}");
+                $this->getLogger()->debug("Daemon create manager : {$managerId}", [__NAMESPACE__]);
                 $this->managerSet[$managerId] = new Manager($managerId, $appId, $workerClass, $bootstrapFile);
             }
 
@@ -576,7 +580,7 @@ class Producer
             sleep($sleep);
         }
 
-        $this->getLogger()->trace("Daemon loop catch \"STOP\" flag (X)");
+        $this->getLogger()->debug("Daemon loop catch \"STOP\" flag (X)", [__NAMESPACE__]);
 
         return $this;
     }
@@ -590,7 +594,8 @@ class Producer
 
         while ($this->countManagerSet()) {
             $this->cleanManagerSet();
-            $this->getLogger()->trace("Daemon finish threads (wait for 0): {$this->countManagerSet()}");
+            $this->getLogger()
+                ->debug("Daemon finish threads (wait for 0): {$this->countManagerSet()}", [__NAMESPACE__]);
             sleep($sleep);
         }
 
@@ -620,13 +625,16 @@ class Producer
             if (!$this->processExists()) {
 
                 $this->getLogger()
-                    ->warning("Daemon is ill can't find process {$processId}, try clean data and continue starting");
+                    ->warning("Daemon is ill can't find process {$processId}, try clean data and continue starting",
+                        [__NAMESPACE__]);
                 $this->cleanData();
 
                 // continue start
 
             } else {
-                $this->getLogger()->trace("Daemon can't START, cause state : {$state}, and process exists {$processId}");
+                $this->getLogger()
+                    ->info("Daemon can't START, cause state : {$state}, and process exists {$processId}",
+                        [__NAMESPACE__]);
 
                 return false;
             }
@@ -640,7 +648,7 @@ class Producer
             $this->mainLoop();
             $this->waitManagersDone();
         } catch (\Exception $ex) {
-            $this->getLogger()->exception($ex);
+            $this->getLogger()->warning($ex->getMessage(), [__NAMESPACE__]);
         }
 
         $this->cleanData();
@@ -660,7 +668,8 @@ class Producer
         if (in_array($state, [self::STATE_T_START, self::STATE_T_STOP, self::STATE_T_KILL])
             && !$this->processExists()
         ) {
-            $this->getLogger()->warning("Daemon is ill cant find process {$this->getProcessId()}, try clean data");
+            $this->getLogger()
+                ->warning("Daemon is ill cant find process {$this->getProcessId()}, try clean data", [__NAMESPACE__]);
 
             $this->cleanData();
 
@@ -669,13 +678,13 @@ class Producer
 
 
         if (in_array($state, [self::STATE_T_STOP, self::STATE_T_KILL])) {
-            $this->getLogger()->trace("Daemon can't STOP, cause state : {$state}");
+            $this->getLogger()->info("Daemon can't STOP, cause state : {$state}", [__NAMESPACE__]);
 
             return true;
         }
 
         if (!in_array($state, [self::STATE_T_START])) {
-            $this->getLogger()->trace("Daemon can't STOP, cause daemon not START");
+            $this->getLogger()->info("Daemon can't STOP, cause daemon not START", [__NAMESPACE__]);
 
             return true;
         }
@@ -688,13 +697,13 @@ class Producer
             return true;
         }
 
-        $this->getLogger()->trace("Daemon sync STOP, wait loop ...");
+        $this->getLogger()->info("Daemon sync STOP, wait loop ...", [__NAMESPACE__]);
 
         $sleep = $this->getConfig(self::CONFIG_SLEEP_STOP_LOOP);
         while ($this->isState(
             [self::STATE_T_STOP, self::STATE_T_KILL, self::STATE_T_START]
         )) {
-            $this->getLogger()->trace("Daemon sync STOP, wait loop .......");
+            $this->getLogger()->debug("Daemon sync STOP, wait loop .......", [__NAMESPACE__]);
             sleep($sleep);
         }
 
@@ -710,13 +719,13 @@ class Producer
         $state = $this->getState();
 
         if (in_array($state, [self::STATE_T_KILL])) {
-            $this->getLogger()->trace("Daemon can't KILL, cause state : {$state}");
+            $this->getLogger()->info("Daemon can't KILL, cause state : {$state}", [__NAMESPACE__]);
 
             return true;
         }
 
         if (!in_array($state, [self::STATE_T_START, self::STATE_T_STOP])) {
-            $this->getLogger()->trace("Daemon can't KILL, cause daemon not START or STOP");
+            $this->getLogger()->info("Daemon can't KILL, cause daemon not START or STOP", [__NAMESPACE__]);
 
             return true;
         }
@@ -725,7 +734,7 @@ class Producer
 
         // ==========================
 
-        $this->getLogger()->trace("Daemon kill process : {$this->getProcessId()}");
+        $this->getLogger()->info("Daemon kill process : {$this->getProcessId()}", [__NAMESPACE__]);
         if ($this->processExists()) {
             $this->processKill();
         }
@@ -756,7 +765,7 @@ class Producer
     {
         $processId = $this->getProcessId();
         $out = shell_exec("kill -9 {$processId}");
-        $this->getLogger()->trace("Daemon kill process : {$processId} , out : {$out}");
+        $this->getLogger()->info("Daemon kill process : {$processId} , out : {$out}", [__NAMESPACE__]);
 
         return $out;
     }
@@ -766,7 +775,7 @@ class Producer
      */
     public function restart()
     {
-        $this->getLogger()->trace('Daemon restart');
+        $this->getLogger()->info('Daemon restart', [__NAMESPACE__]);
         $this->stop();
         $this->start();
 
@@ -778,7 +787,7 @@ class Producer
      */
     public function reset()
     {
-        $this->getLogger()->trace('Daemon reset');
+        $this->getLogger()->info('Daemon reset', [__NAMESPACE__]);
         $this->kill();
         $this->start();
 
