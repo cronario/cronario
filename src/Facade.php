@@ -8,10 +8,12 @@ final class Facade
      * @var array
      */
     protected static $producers = [];
+    protected static $builders = [];
 
     /**
      * @param Producer $producer
      *
+     * @return bool
      * @throws Exception\FacadeException
      */
     public static function addProducer(Producer $producer)
@@ -23,6 +25,30 @@ final class Facade
         }
 
         static::$producers[$appId] = $producer;
+
+        return true;
+    }
+
+    /**
+     * @param $appId
+     * @param $builderFunction
+     *
+     * @return bool
+     * @throws Exception\FacadeException
+     */
+    public static function addBuilder($appId, $builderFunction)
+    {
+        if (array_key_exists($appId, static::$builders)) {
+            throw new Exception\FacadeException("Builder with {$appId} already exists!");
+        }
+
+        if (!is_callable($builderFunction)) {
+            throw new Exception\FacadeException("Builder function for {$appId} is not callable!");
+        }
+
+        static::$builders[$appId] = $builderFunction;
+
+        return true;
     }
 
     /**
@@ -38,6 +64,15 @@ final class Facade
         }
 
         if (!array_key_exists($appId, static::$producers)) {
+
+            if (array_key_exists($appId, static::$builders)) {
+                $func = static::$builders[$appId];
+                static::addProducer($func($appId));
+                unset(static::$builders[$appId]);
+
+                return static::getProducer($appId);
+            }
+
             throw new Exception\FacadeException("Producer with appId: '{$appId}' not exists yet!");
         }
 

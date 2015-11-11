@@ -42,6 +42,67 @@ class FacadeTest extends \PHPUnit_Framework_TestCase
     }
 
 
+    public function testAddBuilderCustom()
+    {
+        $appId = 'app-id-builder-simple';
+
+        Facade::addBuilder($appId, function ($appIdInsideCallback) {
+            return new Producer([
+                Producer::P_APP_ID => $appIdInsideCallback,
+            ]);
+        });
+
+        $producer = Facade::getProducer($appId);
+        $this->assertInstanceOf('\\Cronario\\Producer', $producer);
+        $this->assertEquals($appId, $producer->getAppId());
+    }
+
+    public function testAddBuilderTwiceException()
+    {
+        $appId = 'app-exception-twice';
+
+        Facade::addBuilder($appId, function ($appId) {
+            return new Producer([
+                Producer::P_APP_ID => $appId,
+            ]);
+        });
+
+        $this->setExpectedException('\\Cronario\\Exception\\FacadeException');
+
+        Facade::addBuilder($appId, function ($appId) {
+            return new Producer([
+                Producer::P_APP_ID => $appId,
+            ]);
+        });
+    }
+
+    public function testAddBuilderFunctionException()
+    {
+        $appId = 'app-exception-not-obj';
+
+        Facade::addBuilder($appId, function ($appId) {
+            return 'must return Producer object but we will return string';
+        });
+
+        $hasException = false;
+        try {
+            $producer = Facade::getProducer($appId);
+        } catch (\Exception $ex) {
+            $hasException = true;
+        }
+
+        $this->assertTrue($hasException);
+    }
+
+    public function testAddBuilderNotFunctionException()
+    {
+        $appId = 'app-exception-not-fn';
+
+        $this->setExpectedException('\\Cronario\\Exception\\FacadeException');
+
+        Facade::addBuilder($appId, 'string function !?!');
+    }
+
     public function testGetProducerUndefinedException()
     {
         $this->setExpectedException('\\Cronario\\Exception\\FacadeException');
