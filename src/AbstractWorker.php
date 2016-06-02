@@ -62,20 +62,9 @@ abstract class AbstractWorker
         ];
 
 
-
-    /*
-     * [
-     *      'Xxx\Worker' => [
-     *          '...' => '...',
-     *      ],
-     *      'Yyy\Worker' => [
-     *          '...' => '...',
-     *      ]
-     * ]
-     */
     private static $loadedConfigSet = [];
     protected static $config = [];
-    protected static $configFile; // __DIR__ . '/' . self::DEFAULT_CONFIG_FILENAME;
+    protected static $configFile;
 
     /**
      * @return array|mixed|string
@@ -130,7 +119,7 @@ abstract class AbstractWorker
         $calledClass = get_called_class();
 
         // Load config
-        if (null === self::$loadedConfigSet[$calledClass]) {
+        if (!isset(self::$loadedConfigSet[$calledClass]) || null === self::$loadedConfigSet[$calledClass]) {
             self::$loadedConfigSet[$calledClass] = array_merge(self::$configDefault, static::loadConfig());
         }
 
@@ -138,6 +127,24 @@ abstract class AbstractWorker
         return (null === $key)
             ? self::$loadedConfigSet[$calledClass]
             : self::$loadedConfigSet[$calledClass][$key];
+    }
+
+    /**
+     * @param array $config
+     *
+     * @return bool
+     */
+    final public static function setConfigDefault(array $config = [])
+    {
+        $calledClass = get_called_class();
+
+        if (!isset(self::$loadedConfigSet[$calledClass])) {
+            static::$config = $config;
+        } else {
+            self::$loadedConfigSet[$calledClass] = array_merge(self::$configDefault, $config);
+        }
+
+        return true;
     }
 
     //endregion **************************************************
@@ -158,16 +165,19 @@ abstract class AbstractWorker
         }
 
         if ($result->isError()) {
-            $callbackJobs = $job->getCallback(AbstractJob::P_CALLBACK_T_ERROR);
+            $callbackJobs = $job->getCallbacksError();
         } else {
-            $type = ($result->isSuccess())
-                ? AbstractJob::P_CALLBACK_T_SUCCESS
-                : AbstractJob::P_CALLBACK_T_FAILURE;
 
-            $callbackJobs = array_merge(
-                $job->getCallback(AbstractJob::P_CALLBACK_T_ERROR),
-                $job->getCallback($type)
-            );
+            $callbackJobs = $job->getCallbacksDone();
+            if($result->isSuccess()){
+                $callbackJobs = $callbackJobs + $job->getCallbacksSuccess();
+            } else {
+                $callbackJobs = $callbackJobs + $job->getCallbacksError();
+            }
+        }
+
+        if (!is_array($callbackJobs) || count($callbackJobs) === 0) {
+            return $this;
         }
 
         foreach ($callbackJobs as $index => $callbackJob) {
@@ -176,6 +186,18 @@ abstract class AbstractWorker
         }
 
         return $this;
+    }
+
+    //endregion **************************************************
+
+    //endregion HELPERS **************************************************
+
+    /**
+     * @return string
+     */
+    public static function getClassPath()
+    {
+        return '\\' . ltrim(get_called_class(), '\\');
     }
 
     //endregion **************************************************

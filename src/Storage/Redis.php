@@ -3,6 +3,7 @@
 namespace Cronario\Storage;
 
 use Cronario\AbstractJob;
+use Predis\Client;
 
 class Redis implements StorageInterface
 {
@@ -11,15 +12,15 @@ class Redis implements StorageInterface
     const DEFAULT_NAMESPACE = 'default';
 
     /**
-     * @var \Predis\Client
+     * @var Client
      */
     protected $redis;
     protected $namespace;
 
-    public function __construct($namespace = null, \Predis\Client $redis = null)
+    public function __construct($namespace = null, Client $redis = null)
     {
         if (null === $redis) {
-            $redis = new \Predis\Client(self::DEFAULT_REDIS_SERVER);
+            $redis = new Client(self::DEFAULT_REDIS_SERVER);
         }
 
         if (null === $namespace) {

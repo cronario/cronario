@@ -2,31 +2,35 @@
 
 namespace Cronario;
 
+use Cron\CronExpression;
 use Cronario\Exception\JobException;
 use Cronario\Exception\ResultException;
 
 abstract class AbstractJob implements \Serializable
 {
-    protected $data = [];
-
+    use \Cronario\TraitOptions;
 
     /**
-     * @param array $data
+     * @var array
      */
-    public function __construct($data = [])
-    {
-        $this->data = $data;
+    protected $data = [];
 
-        if ($this->isStored()) {
-            $this->unserializeCallbacks();
-            $this->unserializeResult();
-        } else {
-            if(isset($this->data[self::P_CALLBACK])){
-                $this->callbacks = $this->data[self::P_CALLBACK];
-            }
-            $this->addDefaultData();
-            $this->serializeCallbacks();
-        }
+    /**
+     * @param array $options
+     */
+    public function __construct(array $options = [])
+    {
+        $this->setOptions($options);
+        $this->addDefaultData();
+        $this->init();
+    }
+
+    /**
+     * Template Method
+     */
+    protected function init()
+    {
+
     }
 
     // region SERIALIZE ******************************************************************
@@ -44,7 +48,9 @@ abstract class AbstractJob implements \Serializable
      */
     public function unserialize($serialized)
     {
-        $this->data = unserialize($serialized);
+        $options = unserialize($serialized);
+        $this->setOptions($options);
+        $this->init();
     }
 
     // endregion  **************************************************************************
@@ -136,7 +142,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function isStored()
     {
-        return isset($this->data[self::P_ID]);
+        return $this->hasData(self::P_ID);
     }
 
     /**
@@ -144,9 +150,6 @@ abstract class AbstractJob implements \Serializable
      */
     public function save()
     {
-        $this->serializeCallbacks();
-        $this->serializeResult();
-
         $this->getStorage()->save($this);
 
         return $this;
@@ -213,7 +216,7 @@ abstract class AbstractJob implements \Serializable
         }
 
         if (!$this->hasData(self::P_JOB_CLASS)) {
-            $this->setJobClass($this->getJobClass());
+            $this->setJobClass('\\' . ltrim(get_class($this), "\\"));
         }
 
         if (!$this->hasData(self::P_APP_ID)) {
@@ -272,19 +275,30 @@ abstract class AbstractJob implements \Serializable
     }
 
     /**
-     * @param      $key
-     * @param null $value
+     * @param $key
+     * @param $value
      *
      * @return $this
-     * @throws JobException
      */
-    public function setData($key, $value = null)
+    public function setData($key, $value)
     {
         $this->data[$key] = $value;
 
         return $this;
     }
 
+    /**
+     * @param $key
+     * @param $value
+     *
+     * @return $this
+     */
+    public function addData($key, $value)
+    {
+        $this->data[$key][] = $value;
+
+        return $this;
+    }
 
     /**
      * @param null $key
@@ -308,29 +322,34 @@ abstract class AbstractJob implements \Serializable
      */
     public function hasParam($key)
     {
-        return array_key_exists($key, (array) $this->data[self::P_PARAMS]);
+        return $this->hasData(self::P_PARAMS) && array_key_exists($key, (array) $this->data[self::P_PARAMS]);
     }
 
+
     /**
-     * @param      $key
-     * @param null $value
+     * @param array $params
      *
      * @return $this
      */
-    public function setParam($key, $value = null)
+    public function setParams(array $params = [])
     {
-        if (is_array($key)) {
-            $this->data[self::P_PARAMS] = $key;
+        return $this->setOptions($params);
+    }
 
-            return $this;
-        }
-
+    /**
+     * @param $key
+     * @param $value
+     *
+     * @return $this
+     */
+    public function setParam($key, $value)
+    {
         $this->data[self::P_PARAMS][$key] = $value;
 
         return $this;
     }
 
-    static protected $resultClass = '\\Cronario\\Exception\\ResultException';
+    protected static $resultClass = '\\Cronario\\Exception\\ResultException';
 
     /**
      * @var ResultException
@@ -338,37 +357,8 @@ abstract class AbstractJob implements \Serializable
     protected $result;
 
     /**
-     * @return $this
-     */
-    protected function serializeResult()
-    {
-        $result = $this->getResult();
-        if ($result instanceof ResultException) {
-            $this->data[self::P_RESULT] = $result->toArray();
-        }
-
-        return $this;
-    }
-
-    /**
-     * @return $this
-     */
-    protected function unserializeResult()
-    {
-        $result = $this->data[self::P_RESULT];
-        if (is_array($result)) {
-            $this->setResult(
-                $result['globalCode'],
-                $result['data']
-            );
-        }
-
-        return $this;
-    }
-
-    /**
      * @return ResultException|null
-     * @throws \Ik\Lib\Exception\RuntimeException
+     * @throws \Result\RuntimeException
      */
     public function getResult()
     {
@@ -380,10 +370,14 @@ abstract class AbstractJob implements \Serializable
      * @param null $data
      *
      * @return ResultException|mixed
-     * @throws \Ik\Lib\Exception\RuntimeException
+     * @throws \Result\RuntimeException
      */
     public function setResult($result, $data = null)
     {
+        if (null === $result) {
+            return $this;
+        }
+
         if (is_numeric($result)) {
             if ($result > 1000) {
                 $result = ResultException::factory($result, $data);
@@ -392,6 +386,8 @@ abstract class AbstractJob implements \Serializable
             }
         } elseif ($result instanceof ResultException) {
             // continue
+        } elseif (is_array($result) && isset($result[self::RESULT_P_GLOBAL_CODE])) {
+            $result = ResultException::factory($result[self::RESULT_P_GLOBAL_CODE], $result[self::RESULT_P_DATA]);
         } else {
             $result = new ResultException(ResultException::E_INTERNAL, $result);
         }
@@ -400,13 +396,11 @@ abstract class AbstractJob implements \Serializable
             $result->addData($data);
         }
 
-        $result->addData([
-            '@' . self::P_IS_SYNC => $this->isSync(),
-            '@' . self::P_ID      => $this->getId(),
-            '@' . self::P_APP_ID  => $this->getAppId(),
-        ]);
-
         $this->result = $result;
+        $this->setData(self::P_RESULT, [
+            self::RESULT_P_GLOBAL_CODE => $result->getGlobalCode(),
+            self::RESULT_P_DATA        => $result->getData(),
+        ]);
 
         return $this;
     }
@@ -419,7 +413,7 @@ abstract class AbstractJob implements \Serializable
     const P_JOB_CLASS = 'jobClass';
     const P_WORKER_CLASS = 'workerClass';
 
-    const P_IS_SYNC = 'isSync';
+    const P_IS_SYNC = 'sync';
     const P_APP_ID = 'appId';
     const P_PARENT_ID = 'parentId';
     const P_AUTHOR = 'author';
@@ -477,9 +471,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function getJobClass()
     {
-        $class = $this->getData(self::P_JOB_CLASS, get_class($this));
-
-        return '\\' . ltrim($class, "\\");
+        return $this->getData(self::P_JOB_CLASS);
     }
 
     /**
@@ -495,12 +487,19 @@ abstract class AbstractJob implements \Serializable
     // WorkerClass =====
 
     /**
+     * @var null|string
+     */
+    protected $workerClass = null;
+
+    /**
      * @return string
      */
     public function getWorkerClass()
     {
         $class = $this->getData(self::P_WORKER_CLASS,
-            str_replace('\Job', '\Worker', get_class($this))
+            (null !== $this->workerClass)
+                ? $this->workerClass
+                : str_replace('\Job', '\Worker', get_class($this))
         );
 
         return '\\' . ltrim($class, "\\");
@@ -532,7 +531,7 @@ abstract class AbstractJob implements \Serializable
      *
      * @return AbstractJob
      */
-    protected function setAppId($appId)
+    public function setAppId($appId)
     {
         return $this->setData(self::P_APP_ID, $appId);
     }
@@ -643,7 +642,7 @@ abstract class AbstractJob implements \Serializable
             return -1;
         }
 
-        $object = \Cron\CronExpression::factory($value);
+        $object = CronExpression::factory($value);
 
         $format = 'Y-m-d H:i:s';
         $timeFirst = strtotime($object->getNextRunDate()->format($format));
@@ -804,7 +803,7 @@ abstract class AbstractJob implements \Serializable
      */
     public function isDebug()
     {
-        return $this->getData(self::P_DEBUG);
+        return $this->hasData(self::P_DEBUG);
     }
 
     /**
@@ -814,46 +813,33 @@ abstract class AbstractJob implements \Serializable
      */
     public function setDebug($debug)
     {
-        return $this->setData(self::P_DEBUG, (bool) $debug);
+        return $this->setData(self::P_DEBUG, is_array($debug) ? $debug : []);
     }
 
     /**
-     * @return int|null|string
+     * @return null|array
      */
-    public function getDebugData()
+    public function getDebug()
     {
-        return $this->getData(self::P_DEBUG_DATA);
+        return $this->getData(self::P_DEBUG, []);
     }
 
     /**
-     * @param $debugData
-     *
-     * @return AbstractJob
-     */
-    protected function setDebugData($debugData)
-    {
-        return $this->setData(self::P_DEBUG_DATA, $debugData);
-    }
-
-    /**
-     * @param $key
      * @param $value
      *
      * @return $this|AbstractJob
      */
-    public function addDebugData($key, $value)
+    public function addDebug($value)
     {
         if (!$this->isDebug()) {
             return $this;
         }
 
-        $debugData = $this->getData(self::P_DEBUG_DATA);
-        $key = count($debugData) . ':' . $key;
-        $debugData[$key] = is_array($value) ? json_encode($value) : $value;
-
-        return $this->setData(self::P_DEBUG_DATA, $debugData);
+        return $this->addData(
+            self::P_DEBUG,
+            is_array($value) ? json_encode($value) : $value
+        );
     }
-
 
     // endregion **********************************************
 
@@ -970,69 +956,156 @@ abstract class AbstractJob implements \Serializable
 
     // region Callback ******************************************************
 
-    const P_CALLBACK = 'callback';
+    const P_CALLBACKS = 'callbacks';
     const P_CALLBACK_T_SUCCESS = 'onSuccess';
     const P_CALLBACK_T_FAILURE = 'onFail';
     const P_CALLBACK_T_DONE = 'onDone';
     const P_CALLBACK_T_ERROR = 'onError';
 
-    protected $callbacks;
+    /**
+     * @var array
+     */
+    protected $callbacks = [];
 
     /**
-     * @param null $type
-     *
-     * @return int|null|string
+     * @return array
      */
-    public function getCallback($type = null)
+    public function getCallbacks()
     {
-        return (null === $type)
-            ? $this->callbacks
-            : (array) $this->callbacks[$type];
+        return $this->callbacks;
     }
 
     /**
-     * @return $this
+     * @param $type
+     *
+     * @return array
      */
-    protected function unserializeCallbacks()
+    public function getCallbacksByType($type)
     {
-        $serialized = $this->getData(self::P_CALLBACK);
-        if (is_array($serialized)) {
-            foreach ($serialized as $type => $jobs) {
-                if (is_array($jobs)) {
-                    foreach ($jobs as $index => $job) {
-                        $this->callbacks[$type][] = unserialize($job);
-                    }
-                }
-            }
+        if (array_key_exists($type, $this->callbacks) && count($this->callbacks[$type]) > 0) {
+            return $this->callbacks[$type];
         }
 
-        return $this;
+        return [];
     }
 
     /**
+     * @param array $callbacks
+     *
      * @return $this
      * @throws JobException
      */
-    protected function serializeCallbacks()
+    public function setCallbacks(array $callbacks = [])
     {
-        if (!is_array($this->callbacks)) {
-            return $this;
-        }
-
-        $serialized = [];
-        foreach ($this->callbacks as $type => $jobs) {
-            foreach ($jobs as $index => $job) {
-                if ($job instanceof AbstractJob) {
-                    $serialized[$type][] = serialize($job);
-                } else {
-                    throw new JobException('callback type is not instance of AbstractJob or is_string');
-                }
+        foreach ($callbacks as $type => $items) {
+            foreach ($items as $item) {
+                $this->addCallbackJob($type, $item);
             }
         }
 
-        $this->setData(self::P_CALLBACK, $serialized);
-
         return $this;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCallbacksSuccess()
+    {
+        return $this->getCallbacksByType(self::P_CALLBACK_T_SUCCESS);
+    }
+
+    /**
+     * @param $job
+     *
+     * @return AbstractJob
+     * @throws JobException
+     */
+    public function setCallbackSuccess($job)
+    {
+        return $this->addCallbackJob(self::P_CALLBACK_T_SUCCESS, $job);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCallbacksFailure()
+    {
+        return $this->getCallbacksByType(self::P_CALLBACK_T_FAILURE);
+    }
+
+    /**
+     * @param $job
+     *
+     * @return AbstractJob
+     * @throws JobException
+     */
+    public function setCallbackFailure($job)
+    {
+        return $this->addCallbackJob(self::P_CALLBACK_T_FAILURE, $job);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCallbacksDone()
+    {
+        return $this->getCallbacksByType(self::P_CALLBACK_T_DONE);
+    }
+
+    /**
+     * @param $job
+     *
+     * @return AbstractJob
+     * @throws JobException
+     */
+    public function setCallbackDone($job)
+    {
+        return $this->addCallbackJob(self::P_CALLBACK_T_DONE, $job);
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getCallbacksError()
+    {
+        return $this->getCallbacksByType(self::P_CALLBACK_T_ERROR);
+    }
+
+    /**
+     * @param $job
+     *
+     * @return AbstractJob
+     * @throws JobException
+     */
+    public function setCallbackError($job)
+    {
+        return $this->addCallbackJob(self::P_CALLBACK_T_ERROR, $job);
+    }
+
+    /**
+     * @param $type
+     * @param $job
+     *
+     * @return $this
+     * @throws JobException
+     */
+    protected function addCallbackJob($type, $job)
+    {
+        if (is_object($job) && $job instanceof self) {
+            $this->data[self::P_CALLBACKS][$type][] = serialize($job);
+            $this->callbacks[$type][] = $job;
+
+            return $this;
+        }
+
+        if (is_string($job)) {
+            $this->data[self::P_CALLBACKS][$type][] = $job;
+            $this->callbacks[$type][] = unserialize($job);
+
+            return $this;
+        }
+
+        throw new JobException('Callback job must be a serialized string OR object!');
     }
 
     // endregion ************************************************************

@@ -2,16 +2,33 @@
 
 namespace Cronario;
 
+/**
+ * Class Facade
+ *
+ * @package Cronario
+ */
 final class Facade
 {
     /**
+     * Producer instances
+     *
      * @var array
      */
     protected static $producers = [];
 
     /**
+     * Producer builders scope
+     *
+     * @var array
+     */
+    protected static $builders = [];
+
+    /**
+     * Add producer to facade
+     *
      * @param Producer $producer
      *
+     * @return boolean
      * @throws Exception\FacadeException
      */
     public static function addProducer(Producer $producer)
@@ -23,9 +40,37 @@ final class Facade
         }
 
         static::$producers[$appId] = $producer;
+
+        return true;
     }
 
     /**
+     * Add Builder to facade builder scope
+     *
+     * @param $appId
+     * @param $builderFunction
+     *
+     * @return boolean
+     * @throws Exception\FacadeException
+     */
+    public static function addBuilder($appId, $builderFunction)
+    {
+        if (array_key_exists($appId, static::$builders)) {
+            throw new Exception\FacadeException("Builder with {$appId} already exists!");
+        }
+
+        if (!is_callable($builderFunction)) {
+            throw new Exception\FacadeException("Builder function for {$appId} is not callable!");
+        }
+
+        static::$builders[$appId] = $builderFunction;
+
+        return true;
+    }
+
+    /**
+     * Get producer by id
+     *
      * @param string $appId
      *
      * @return Producer|null
@@ -38,6 +83,15 @@ final class Facade
         }
 
         if (!array_key_exists($appId, static::$producers)) {
+
+            if (array_key_exists($appId, static::$builders)) {
+                $func = static::$builders[$appId];
+                static::addProducer($func($appId));
+                unset(static::$builders[$appId]);
+
+                return static::getProducer($appId);
+            }
+
             throw new Exception\FacadeException("Producer with appId: '{$appId}' not exists yet!");
         }
 
@@ -45,7 +99,9 @@ final class Facade
     }
 
     /**
-     * @return bool
+     * Clean producer scope
+     *
+     * @return boolean
      */
     public static function cleanProducers()
     {
@@ -55,6 +111,8 @@ final class Facade
     }
 
     /**
+     * Get storage by application id
+     *
      * @param $appId
      *
      * @return Storage\StorageInterface
@@ -69,6 +127,8 @@ final class Facade
     // region PRODUCERS STATS *******************************************************************
 
     /**
+     * Get producer statistic
+     *
      * @return array
      */
     public static function getProducersStats()
@@ -83,6 +143,8 @@ final class Facade
     }
 
     /**
+     * Get queues statistic
+     *
      * @return array
      */
     public static function getQueuesStats()
@@ -97,6 +159,8 @@ final class Facade
     }
 
     /**
+     * Get all reserved jobs
+     *
      * @return array
      */
     public static function getJobsReserved()
@@ -112,6 +176,8 @@ final class Facade
 
 
     /**
+     * Get all managers statistic
+     *
      * @return array
      */
     public static function getManagersStats()
@@ -122,40 +188,25 @@ final class Facade
 
             /** @var $producer Producer */
             $redis = $producer->getRedis();
+            $keys = [
+                'stat' => $redis->keys(Manager::REDIS_NS_STATS . '*'),
+                'live' => $redis->keys(Manager::REDIS_NS_LIVE . '*')
+            ];
 
-            /** @var $redis \Predis\Client */
-            $keys = $redis->keys(Manager::REDIS_NS_STATS . '*');
+            foreach ($keys as $type => $statsKeys) {
+                foreach ($statsKeys as $statsKey) {
+                    $parse = Manager::parseManagerStatKey($statsKey);
+                    if ($appId != $parse['appId']) {
+                        continue;
+                    }
 
-
-            foreach ($keys as $key) {
-                $parse = Manager::parseManagerStatKey($key);
-
-                if ($appId != $parse['appId']) {
-                    continue;
+                    $statsItemData = $redis->hgetall($statsKey);
+                    $statsItemData['workerClass'] = $parse['workerClass'];
+                    $statsItemData['appId'] = $parse['appId'];
+                    $managersStats[$parse['appId']][$type][] = $statsItemData;
                 }
-
-                $data = $redis->hgetall($key);
-                $data['workerClass'] = $parse['workerClass'];
-                $data['appId'] = $parse['appId'];
-
-                $managersStats[$parse['appId']]['stat'][] = $data;
-
             }
 
-            $keys = $redis->keys(Manager::REDIS_NS_LIVE . '*');
-            foreach ($keys as $key) {
-
-                $parse = Manager::parseManagerStatKey($key);
-                if ($appId != $parse['appId']) {
-                    continue;
-                }
-
-                $data = $redis->hgetall($key);
-                $data['workerClass'] = $parse['workerClass'];
-                $data['appId'] = $parse['appId'];
-
-                $managersStats[$parse['appId']]['live'][] = $data;
-            }
         }
 
         return $managersStats;

@@ -1,0 +1,65 @@
+---
+- hosts: all
+  sudo: yes
+  tasks:
+  - name: System upgrade
+    apt: update_cache=yes upgrade=yes
+
+  - name: Add repositories
+    apt_repository: repo="{{ item }}" state=present
+    with_items:
+      - deb http://packages.dotdeb.org wheezy-php56-zts all
+      - deb http://repo.mongodb.org/apt/debian wheezy/mongodb-org/3.0 main
+
+  - name: Add repositories keys
+    apt_key: url="{{ item }}" state=present validate_certs=False
+    with_items:
+      - https://www.dotdeb.org/dotdeb.gpg
+      - https://docs.mongodb.org/10gen-gpg-key.asc
+
+  - name: Install packages
+    apt: name={{ item }} update_cache=yes state=latest
+    with_items:
+    - git
+    - vim
+    - htop
+    - mcrypt
+    - nginx
+    - sqlite3
+    - mysql-server
+    - redis-server
+    - libpcre3-dev
+    - mongodb-org
+    - php5-cli
+    - php5-fpm
+    - php5-redis
+    - php5-mysql
+    - php5-sqlite
+    - php5-dev
+    - php5-xdebug
+    - php5-curl
+
+  - name: Run mysql-server
+    service: name=mysql state=running
+
+  - name: Install PECL threads.
+    command: "pecl install pthreads-2.0.10" # fix version because of php-7
+    register: pecl_result
+    changed_when: "pecl_result.rc == 0"
+    failed_when: "not (('already installed' in pecl_result.stdout) or ('install ok:' in pecl_result.stdout))"
+
+  - name: Enable pthreads
+    copy: content="extension=pthreads.so" dest=/etc/php5/{{ item }}/conf.d/10-pthreads.ini owner=root group=root
+    with_items:
+    - fpm
+    - cli
+    notify:
+    - restart php5-fpm
+
+  - name: Install composer
+    get_url: url=https://getcomposer.org/composer.phar dest=/usr/local/bin/composer mode=0755
+  - name: Install dependencies
+    shell: composer install chdir=/var/www
+  handlers:
+    - name: restart php5-fpm
+      service: name=php5-fpm state=restarted

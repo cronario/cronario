@@ -1,6 +1,6 @@
 <?php
 
-namespace Cronario\Example;
+namespace Cronario\Test;
 
 class ResultException extends \Cronario\Exception\ResultException
 {

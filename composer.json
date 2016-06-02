@@ -1,0 +1,49 @@
+{
+    "name": "cronario/cronario",
+    "description": "Do Jobs like a Boss",
+    "keywords": [
+      "Cronario", "Cron", "Threads",
+      "Daemon","Manager", "Queue", "Job", "Worker", "Producer",
+      "Asynchronous", "Synchronous",
+      "Async", "Sync"
+    ],
+
+    "homepage": "http://cronar.io",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Gryaznov Vladislav",
+            "email": "v.gryaznov@interkassa.com",
+            "homepage": "https://interkassa.com",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php" : ">=5.5.0",
+        "cronario/result" : "0.2.*",
+        "predis/predis": "1.0.1",
+        "mtdowling/cron-expression": "^1.0",
+        "psr/log": "^1.0.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit" : "4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Cronario\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Cronario\\Test\\": "tests"
+        }
+    },
+    "scripts": {
+        "test": "phpunit"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "0.1.0-dev"
+        }
+    }
+}
