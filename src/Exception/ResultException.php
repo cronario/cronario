@@ -4,6 +4,11 @@ namespace Cronario\Exception;
 
 use \Result\ResultException as IkResultException;
 
+/**
+ * Class ResultException
+ *
+ * @package Cronario\Exception
+ */
 class ResultException extends IkResultException
 {
 
@@ -37,10 +42,14 @@ class ResultException extends IkResultException
      * RETRIES + REDIRECTS      codes 8xx
      ******************************************************************************/
 
-
+    /**
+     * Common results scope with message and status
+     *
+     * @var array
+     */
     public static $results
         = [
-            self::R_QUEUED               => array(
+            self::R_QUEUED             => array(
                 self::P_MESSAGE => 'queued ...',
                 self::P_STATUS  => self::STATUS_QUEUED,
             ),
@@ -60,7 +69,9 @@ class ResultException extends IkResultException
 
 
     /**
-     * @return bool
+     * Check for 'queued' status
+     *
+     * @return boolean
      */
     public function isQueued()
     {
@@ -68,7 +79,9 @@ class ResultException extends IkResultException
     }
 
     /**
-     * @return bool
+     * Check for 'retry' status
+     *
+     * @return boolean
      */
     public function isRetry()
     {
@@ -76,7 +89,9 @@ class ResultException extends IkResultException
     }
 
     /**
-     * @return bool
+     * Check for 'redirect' status
+     *
+     * @return boolean
      */
     public function isRedirect()
     {

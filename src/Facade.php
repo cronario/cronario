@@ -2,18 +2,33 @@
 
 namespace Cronario;
 
+/**
+ * Class Facade
+ *
+ * @package Cronario
+ */
 final class Facade
 {
     /**
+     * Producer instances
+     *
      * @var array
      */
     protected static $producers = [];
+
+    /**
+     * Producer builders scope
+     *
+     * @var array
+     */
     protected static $builders = [];
 
     /**
+     * Add producer to facade
+     *
      * @param Producer $producer
      *
-     * @return bool
+     * @return boolean
      * @throws Exception\FacadeException
      */
     public static function addProducer(Producer $producer)
@@ -30,10 +45,12 @@ final class Facade
     }
 
     /**
+     * Add Builder to facade builder scope
+     *
      * @param $appId
      * @param $builderFunction
      *
-     * @return bool
+     * @return boolean
      * @throws Exception\FacadeException
      */
     public static function addBuilder($appId, $builderFunction)
@@ -52,6 +69,8 @@ final class Facade
     }
 
     /**
+     * Get producer by id
+     *
      * @param string $appId
      *
      * @return Producer|null
@@ -80,7 +99,9 @@ final class Facade
     }
 
     /**
-     * @return bool
+     * Clean producer scope
+     *
+     * @return boolean
      */
     public static function cleanProducers()
     {
@@ -90,6 +111,8 @@ final class Facade
     }
 
     /**
+     * Get storage by application id
+     *
      * @param $appId
      *
      * @return Storage\StorageInterface
@@ -104,6 +127,8 @@ final class Facade
     // region PRODUCERS STATS *******************************************************************
 
     /**
+     * Get producer statistic
+     *
      * @return array
      */
     public static function getProducersStats()
@@ -118,6 +143,8 @@ final class Facade
     }
 
     /**
+     * Get queues statistic
+     *
      * @return array
      */
     public static function getQueuesStats()
@@ -132,6 +159,8 @@ final class Facade
     }
 
     /**
+     * Get all reserved jobs
+     *
      * @return array
      */
     public static function getJobsReserved()
@@ -147,6 +176,8 @@ final class Facade
 
 
     /**
+     * Get all managers statistic
+     *
      * @return array
      */
     public static function getManagersStats()
